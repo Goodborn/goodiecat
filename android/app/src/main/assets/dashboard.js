@@ -39,6 +39,9 @@
             '.gc-act-open{--gc-act-color:var(--color-primary);border-color:color-mix(in srgb,var(--color-primary) 45%,var(--gc-line));',
             'background:color-mix(in srgb,var(--color-primary) 14%,var(--gc-surface))}',
             '.gc-act-sep{height:1px;margin:4px 0;background:var(--gc-line)}',
+            '.gc-open-row{display:flex;gap:8px}',
+            '.gc-open-row .gc-act{justify-content:center}',
+            '.gc-act-browser{--gc-act-color:var(--color-text-subdue)}',
             '.gc-act-start{--gc-act-color:var(--color-positive)}',
             '.gc-act-restart{--gc-act-color:var(--color-primary)}',
             '.gc-act-stop{--gc-act-color:var(--color-negative)}',
@@ -78,6 +81,7 @@
         '<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/></svg>';
 
     var ICONS = {
+        app: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg>',
         open: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6"/><path d="M20 4 10 14"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>',
         start: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v13.72a1 1 0 0 0 1.5.86l11-6.86a1 1 0 0 0 0-1.72l-11-6.86A1 1 0 0 0 8 5.14Z"/></svg>',
         restart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15.3-6.4L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15.3 6.4L3 16"/><path d="M3 21v-5h5"/></svg>',
@@ -209,8 +213,10 @@
             esc(info.status || info.state) + '</div></div></div>' +
             '<div class="gc-sheet-actions">' +
             (info.url
-                ? '<button class="gc-act gc-act-open" data-action="open">' + ICONS.open + '<span>Open ' + esc(info.name) +
-                  ' in browser</span></button><div class="gc-act-sep"></div>'
+                ? '<div class="gc-open-row">' +
+                  '<button class="gc-act gc-act-open" data-action="open">' + ICONS.app + '<span>Open</span></button>' +
+                  '<button class="gc-act gc-act-browser" data-action="browser">' + ICONS.open + '<span>In browser</span></button>' +
+                  '</div><div class="gc-act-sep"></div>'
                 : '') +
             button('start', 'Start', running || !canControl) +
             button('restart', 'Restart', !running || !canControl) +
@@ -237,9 +243,9 @@
         el.querySelectorAll('.gc-act').forEach(function (b) {
             b.addEventListener('click', function () {
                 var action = b.getAttribute('data-action');
-                if (action === 'open') {
+                if (action === 'open' || action === 'browser') {
                     closeSheet(true);
-                    location.href = info.url;
+                    GoodiecatApp.openService(info.url, action === 'open');
                     return;
                 }
                 // Stop asks for a second tap instead of another dialog

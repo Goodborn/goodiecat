@@ -61,7 +61,7 @@ The read-only endpoints follow the dashboard's own login if you've set one up, o
 Get **Goodiecat.apk** from the [latest release](https://github.com/Goodborn/goodiecat/releases/latest). Android 8 or newer.
 
 * **Setup:** enter your dashboard's address (for example `192.168.1.10:8080`). You can add a remote address too, such as the server's Tailscale address; the app uses it whenever home doesn't answer. You can also add the app token.
-* **Tap a service** to open its page in your phone's browser, or to start, stop or restart it.
+* **Tap a service** to open its page in the app or in your phone's browser (best for logins), or to start, stop or restart it.
 * **Alerts** when a running container stops or turns unhealthy, optionally also when it's back up. You can switch them on and off from the gear icon next to search. The app checks about every 15 minutes in the background, using Android's battery-friendly job scheduler. With both alerts off, nothing runs at all.
 * **Service links work away from home too:** links to your server's home address are opened through the remote address, as long as it's the same machine on the same ports (like Tailscale). If your VPN app only tunnels chosen apps, include your browser too.
 

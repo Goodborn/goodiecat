@@ -47,6 +47,9 @@ public class MainActivity extends Activity {
     // the bridge only acts for the dashboard and the setup page, never for a
     // service's own page opened inside the app
     volatile boolean trustedPage;
+    // a service page was opened with "Open" (in the app), so its own links
+    // stay in the app too until we're back on the dashboard
+    boolean serviceInApp;
 
     @Override
     protected void onCreate(Bundle state) {
@@ -63,17 +66,16 @@ public class MainActivity extends Activity {
                 Uri url = req.getUrl();
                 if (isDashboard(url.toString())) return false;
                 if (server.ownsHost(url.getHost())) {
-                    // service pages (qBittorrent, Radarr, ...) open in the phone's
-                    // browser, which handles their logins and downloads properly.
-                    // Dashboard links usually use the home address, so swap in
-                    // whichever one works right now (same machine and ports, e.g.
-                    // over Tailscale)
-                    String want = Server.host(base);
-                    if (!want.isEmpty() && !want.equalsIgnoreCase(url.getHost())) {
-                        String port = url.getPort() > 0 ? ":" + url.getPort() : "";
-                        url = url.buildUpon().encodedAuthority(want + port).build();
+                    Uri reachable = viaWorkingAddress(url);
+                    if (serviceInApp) {
+                        if (reachable.equals(url)) return false;
+                        view.loadUrl(reachable.toString());
+                    } else {
+                        openInBrowser(reachable);
                     }
+                    return true;
                 }
+                // everything else (GitHub, IMDb, ...) opens in the browser
                 openInBrowser(url);
                 return true;
             }
@@ -81,6 +83,10 @@ public class MainActivity extends Activity {
             @Override
             public void doUpdateVisitedHistory(WebView view, String url, boolean isReload) {
                 trustedPage = isDashboard(url) || url.startsWith(SETUP_PAGE);
+                if (isDashboard(url)) serviceInApp = false;
+                // pull-to-refresh fights the inner scrolling of the services' own
+                // pages, so keep it to the dashboard, setup and error pages
+                swipe.setEnabled(failed || trustedPage);
             }
 
             @Override
@@ -179,6 +185,21 @@ public class MainActivity extends Activity {
             runOnUiThread(() -> controlContainer(name, image, action));
         }
 
+        // the service panel's "Open" (in the app) and "Open in browser"
+        @JavascriptInterface
+        public void openService(String url, boolean inApp) {
+            if (!trustedPage) return;
+            runOnUiThread(() -> {
+                Uri target = viaWorkingAddress(Uri.parse(url));
+                if (inApp) {
+                    serviceInApp = true;
+                    web.loadUrl(target.toString());
+                } else {
+                    openInBrowser(target);
+                }
+            });
+        }
+
         @JavascriptInterface
         public void sheetOpen(boolean open) {
             sheetOpen = open;
@@ -233,6 +254,15 @@ public class MainActivity extends Activity {
                 });
             }).start();
         }
+    }
+
+    // Dashboard links usually use the home address; swap in whichever one works
+    // right now (same machine and ports, e.g. over Tailscale)
+    Uri viaWorkingAddress(Uri url) {
+        String want = Server.host(base);
+        if (!server.ownsHost(url.getHost()) || want.isEmpty() || want.equalsIgnoreCase(url.getHost())) return url;
+        String port = url.getPort() > 0 ? ":" + url.getPort() : "";
+        return url.buildUpon().encodedAuthority(want + port).build();
     }
 
     void openInBrowser(Uri url) {
