@@ -1,74 +1,186 @@
-# Goodiecat in detail
+# The Goodiecat guide
 
-## What's different from Dynacat
+1. [Install](#1-install)
+2. [Your dashboard](#2-your-dashboard)
+3. [The phone app](#3-the-phone-app)
+4. [Update or remove](#4-update-or-remove)
+5. [Coming from Dynacat](#5-coming-from-dynacat)
+6. [Reference](#6-reference)
 
-Everything Dynacat does still works the same way, with the same YAML and the same widgets. On top of that:
+---
 
-* **A new default look.** Inter font, a cool slate and violet palette, compact cards, colored meters, and service tiles with a green or red status dot.
-* **Phones done properly.** Dynacat shows one column at a time on phones and tablets; Goodiecat shows everything, stacked, with the page tabs at the top. Search collapses into an icon.
-* **A server card.** CPU, memory, disks and CPU temperature as colored meters, from Goodiecat's own API. It's in the [example config](../examples/goodiecat.yml).
-* **KPI tiles** for the numbers you care about.
-* **Building blocks for your own widgets.** `gc-meters`, `gc-kpis`, `gc-rail`, `gc-list`, `gc-chip`, `gc-pill` and more, for `custom-api` templates. They're styled in [goodiecat.css](../internal/dynacat/static/css/goodiecat.css).
-* **An Android app** with alerts when a container goes down, and start / stop / restart from the dashboard.
+## 1. Install
 
-Coming from Dynacat? Point Goodiecat at your existing config folder: `dynacat.yml` is picked up as is (or rename it to `goodiecat.yml`).
-
-## Quick start
-
-With Docker:
+Run this on the computer that runs your apps (any Linux machine: a home server, a NAS, a Raspberry Pi):
 
 ```bash
-git clone https://github.com/Goodborn/goodiecat.git
-cd goodiecat/examples
-mkdir -p config && cp goodiecat.yml config/
-echo "GOODIECAT_APP_TOKEN=$(openssl rand -hex 24)" > .env
+curl -fsSL https://raw.githubusercontent.com/Goodborn/goodiecat/main/install.sh | sh
+```
+
+The installer:
+
+1. installs Docker if it's missing (it asks first),
+2. creates a `goodiecat` folder in your home folder,
+3. picks a free port (8080 unless it's taken) and makes a random **app token** for the phone app,
+4. asks for your city, for the weather (you can skip it),
+5. starts Goodiecat and shows you the address and the app token.
+
+> **Lost the app token?** It's in `~/goodiecat/.env`, on the line `GOODIECAT_APP_TOKEN=`.
+
+<details>
+<summary>Install by hand instead</summary>
+
+```bash
+mkdir -p ~/goodiecat/config && cd ~/goodiecat
+curl -fsSLo docker-compose.yml https://raw.githubusercontent.com/Goodborn/goodiecat/main/examples/docker-compose.yml
+curl -fsSLo config/goodiecat.yml https://raw.githubusercontent.com/Goodborn/goodiecat/main/examples/goodiecat.yml
+printf 'GOODIECAT_APP_TOKEN=%s\nGOODIECAT_PORT=8080\n' "$(openssl rand -hex 24)" > .env
 docker compose up -d
 ```
 
-Then open `http://<your-server>:8080`. Edit `config/goodiecat.yml` (the parts marked `CHANGE`), and the dashboard reloads by itself.
+</details>
 
-The compose file uses `ghcr.io/goodborn/goodiecat:latest`. To build the image yourself instead, run `docker build -t goodiecat .` in the repo root and use `image: goodiecat` in the compose file.
+---
 
-The full widget reference is Dynacat's: [dynacat.artur.zone/configuration](https://dynacat.artur.zone/configuration).
+## 2. Your dashboard
 
-## The `goodiecat:` config section
+Out of the box you get:
+
+| | |
+| --- | --- |
+| **Server** | CPU, memory, your main drive and the CPU temperature. Bars turn amber, then red, as they fill up. |
+| **Services** | Every Docker container on the computer. A **green dot** means it's running; a **red dot** means it's stopped or unhealthy. |
+| **Weather and calendar** | On the right, or below on a phone. |
+
+Your settings live in **`~/goodiecat/config/goodiecat.yml`**. Save the file and the dashboard updates by itself; no restart needed.
+
+### Give a service a nice name, an icon and a link
+
+Find the `docker-containers` widget in the file and add your container under `containers:`, using the container's name:
+
+```yaml
+            containers:
+              jellyfin:
+                name: Jellyfin
+                description: Movies and shows
+                url: http://192.168.1.10:8096
+                icon: sh:jellyfin
+```
+
+Icons: `sh:` + a name from [selfh.st/icons](https://selfh.st/icons), or `mdi:` + a name from [Material Design Icons](https://pictogrammers.com/library/mdi/).
+
+### Show a second drive on the server card
+
+1. Mount it into Goodiecat in `docker-compose.yml`, under `volumes:` (for example `- /mnt/media:/mnt/media:ro`).
+2. Add it under `goodiecat:` → `host:` → `mountpoints:` in `goodiecat.yml`:
+
+```yaml
+      "/mnt/media":
+        name: Media
+        hide: false
+```
+
+3. Run `docker compose up -d` in `~/goodiecat`.
+
+### Add more widgets
+
+Goodiecat has every widget Dynacat has: RSS, bookmarks, calendars, Jellyfin, Pi-hole, market prices and more. See the **[widget list](https://dynacat.artur.zone/configuration)**.
+
+---
+
+## 3. The phone app
+
+<p align="center"><img src="../.github/screenshots/app-screens.png" alt="The app" width="720"></p>
+
+**Install:** download [**Goodiecat.apk**](https://github.com/Goodborn/goodiecat/releases/latest/download/Goodiecat.apk) on the phone and open it. Android may ask you to allow installing apps from your browser. Android 8 or newer.
+
+**Set up:**
+
+| Field | What to type |
+| --- | --- |
+| Goodiecat address | The address from the installer, like `192.168.1.10:8080` |
+| Remote address *(optional)* | How to reach the same computer when you're away, like its Tailscale address `100.x.y.z:8080` |
+| App token *(optional)* | The token from the installer. Without it you can look, but not start or stop. |
+
+You can change these later from the ⚙️ gear icon → **Server** → **Change**.
+
+**Tap any service** to get:
+
+- **Open**: the service's page, inside the app
+- **In browser**: the same page in your phone's browser. Logins (like qBittorrent's) work best there.
+- **Start / Restart / Stop**: Stop asks you to tap twice. Goodiecat itself can only be restarted, never stopped.
+
+**Alerts:** the app checks your containers about every 15 minutes and tells you when one goes down. You can also turn on "back up" alerts. Both are behind the ⚙️ gear icon. It uses Android's battery-friendly background jobs, and if you switch both alerts off, nothing runs at all.
+
+**Away from home:** the app uses the remote address whenever the home address doesn't answer. Links to your services are switched to the remote address too. With Tailscale's "only some apps" setting, add Goodiecat to that list, and your browser too if you use **In browser**.
+
+---
+
+## 4. Update or remove
+
+**Update:** run the install command again. It downloads the latest Goodiecat and keeps your settings, port and token.
+
+**Remove:**
+
+```bash
+cd ~/goodiecat && docker compose down && cd ~ && rm -rf ~/goodiecat
+```
+
+---
+
+## 5. Coming from Dynacat
+
+Goodiecat reads your Dynacat config as is: point it at your existing config folder and it picks up `dynacat.yml`, or rename the file to `goodiecat.yml`. The new look is built in, so you can drop a custom CSS file you only used for styling.
+
+---
+
+## 6. Reference
+
+### The `goodiecat:` settings
 
 ```yaml
 goodiecat:
-  # needed for start / stop / restart from the app; any long random string
-  app-token: ${GOODIECAT_APP_TOKEN}
+  app-token: ${GOODIECAT_APP_TOKEN}   # unlocks start / stop / restart from the app
   docker:
     sock-path: /var/run/docker.sock   # or tcp://your-docker-socket-proxy:2375
-    restart-only: [traefik]           # can be restarted from the app, never stopped
-  host:                               # disks shown on the server card
+    restart-only: [traefik]           # restart-only; Goodiecat itself always is
+  host:                               # drives on the server card
     hide-mountpoints-by-default: true
     mountpoints:
       "/host": { name: System, hide: false }
 ```
 
-It adds three endpoints:
+### API
 
-| Endpoint | What it's for |
+| Endpoint | Returns / does |
 | --- | --- |
-| `GET /api/goodiecat/host` | CPU, memory, disks and temperature for the server card |
-| `GET /api/goodiecat/containers` | Container names, states and health (the app's alerts) |
-| `POST /api/goodiecat/containers/{start,stop,restart}` | Container control; needs the `X-Goodiecat-Token` header |
+| `GET /api/goodiecat/host` | CPU, memory, drives, temperature, uptime |
+| `GET /api/goodiecat/containers` | Each container's name, state and health |
+| `POST /api/goodiecat/containers/{start,stop,restart}` | Controls a container. Body `{"name": "…"}`; needs the `X-Goodiecat-Token` header |
 
-The read-only endpoints follow the dashboard's own login if you've set one up, or accept the token. Control always needs the token. Goodiecat's own container can only be restarted, never stopped.
+The read endpoints use the dashboard's own login if you've set one up, otherwise they're open like the dashboard itself. Control always needs the token.
 
-## The Android app
+### Styling your own widgets
 
-Get **Goodiecat.apk** from the [latest release](https://github.com/Goodborn/goodiecat/releases/latest). Android 8 or newer.
+For `custom-api` templates, Goodiecat includes ready-made pieces:
 
-* **Setup:** enter your dashboard's address (for example `192.168.1.10:8080`). You can add a remote address too, such as the server's Tailscale address; the app uses it whenever home doesn't answer. You can also add the app token.
-* **Tap a service** to open its page in the app or in your phone's browser (best for logins), or to start, stop or restart it.
-* **Alerts** when a running container stops or turns unhealthy, optionally also when it's back up. You can switch them on and off from the gear icon next to search. The app checks about every 15 minutes in the background, using Android's battery-friendly job scheduler. With both alerts off, nothing runs at all.
-* **Service links work away from home too:** links to your server's home address are opened through the remote address, as long as it's the same machine on the same ports (like Tailscale). If your VPN app only tunnels chosen apps, include your browser too.
+| Class | Looks like |
+| --- | --- |
+| `gc-meters` + `gc-meter` | the server card's tiles with bars |
+| `gc-kpis` + `gc-kpi` | big-number tiles |
+| `gc-rail` + `gc-poster-card` | a scrolling row of posters |
+| `gc-list` + `gc-list-row` | compact rows |
+| `gc-chip`, `gc-pill`, `gc-dot-ok` / `gc-dot-bad` | small labels and status dots |
 
-To build it yourself, run `./gradlew assembleRelease` in [`android/`](../android). Without a `keystore.properties` it's signed with the debug key.
+They're defined in [goodiecat.css](../internal/dynacat/static/css/goodiecat.css). The [example config](../examples/goodiecat.yml) shows the server card built from them.
 
-## Credits and license
+### Build it yourself
 
-Goodiecat is a fork of [Dynacat](https://github.com/Panonim/dynacat) by Panonim, which is a fork of [Glance](https://github.com/glanceapp/glance) by svilenmarkov and contributors. Nearly everything here is their work, and all the credit for it goes to them.
+- **Docker image:** `docker build -t goodiecat .` in the repo root.
+- **Android app:** `./gradlew assembleRelease` in [`android/`](../android). It's signed with the debug key unless you add a `keystore.properties`.
 
-Like both of them, Goodiecat is licensed under the [GNU AGPL v3](../LICENSE). The bundled [Inter](https://rsms.me/inter/) font is under the [SIL Open Font License 1.1](../internal/dynacat/static/fonts/Inter-LICENSE.txt).
+### Credits and license
+
+Goodiecat is a fork of [Dynacat](https://github.com/Panonim/dynacat) by Panonim, which is a fork of [Glance](https://github.com/glanceapp/glance) by Svilen Markov and contributors. Nearly all of the code is theirs.
+
+License: [GNU AGPL v3](../LICENSE). The bundled [Inter](https://rsms.me/inter/) font is under the [SIL Open Font License 1.1](../internal/dynacat/static/fonts/Inter-LICENSE.txt).

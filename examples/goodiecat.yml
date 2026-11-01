@@ -1,6 +1,8 @@
-# Example Goodiecat config: a server card, your containers with live status,
-# and the weather. Copy it to config/goodiecat.yml next to docker-compose.yml
-# and change the bits marked CHANGE.
+# Goodiecat starter config. It works as is: a server card, every Docker
+# container with a live status dot, and a clock. Change anything you like;
+# the dashboard reloads by itself when you save.
+#
+# More widgets: https://dynacat.artur.zone/configuration
 
 server:
   port: 8080
@@ -8,16 +10,12 @@ server:
   allow-editing: false
 
 goodiecat:
-  # Lets the phone app start / stop / restart containers. Use a long random
-  # string, e.g. `openssl rand -hex 24`, and enter the same one in the app.
+  # Lets the phone app start, stop and restart containers. The installer
+  # puts a random token in the .env file next to docker-compose.yml.
   app-token: ${GOODIECAT_APP_TOKEN}
   docker:
     sock-path: /var/run/docker.sock
-    # can be restarted from the app but never stopped (the dashboard itself
-    # always is); CHANGE to your reverse proxy, VPN, ...
-    restart-only: []
-  # disks for the server card. The compose file mounts the host's / at
-  # /host; CHANGE or add your other drives (mount them into the container too)
+  # disks on the server card ("/host" is your computer's main drive)
   host:
     hide-mountpoints-by-default: true
     mountpoints:
@@ -39,7 +37,7 @@ pages:
     columns:
       - size: full
         widgets:
-          # CPU, memory, disks and temperature from goodiecat's own API
+          # CPU, memory, disks and temperature
           - type: custom-api
             title: Server
             title-icon: mdi:server
@@ -87,33 +85,28 @@ pages:
                 {{ end }}
               </div>
 
-          # every container listed under `containers:` shows with a green
-          # (running) or red (stopped / unhealthy) dot; in the app, tap one to
-          # open it or start / stop / restart it
+          # Every container on this computer, with a green (running) or red
+          # (stopped / unhealthy) dot. To give one a nicer name, an icon or a
+          # link, add it under `containers:` like the commented example.
           - type: docker-containers
             title: Services
             title-icon: mdi:docker
             sock-path: /var/run/docker.sock
-            hide-by-default: true
+            format-container-names: true
             update-interval: 30s
-            containers:
-              # CHANGE: the key is the container name
-              goodiecat:
-                name: Goodiecat
-                description: This dashboard
-                url: http://YOUR-SERVER:8080
-                icon: mdi:cat
-                hide: false
-              # jellyfin:
-              #   name: Jellyfin
-              #   description: Movies and shows
-              #   url: http://YOUR-SERVER:8096
-              #   icon: sh:jellyfin
-              #   hide: false
+            # containers:
+            #   jellyfin:                     # the container's name
+            #     name: Jellyfin
+            #     description: Movies and shows
+            #     url: http://192.168.1.10:8096
+            #     icon: sh:jellyfin
 
       - size: small
         widgets:
-          - type: weather
-            location: London, United Kingdom # CHANGE
-            units: metric
-            hour-format: 24h
+          # WEATHER (the installer fills this in if you give it a city)
+          # - type: weather
+          #   location: London, United Kingdom
+          #   units: metric
+          #   hour-format: 24h
+          - type: calendar
+            first-day-of-week: monday

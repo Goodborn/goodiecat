@@ -1,20 +1,21 @@
-# Goodiecat with Docker: put goodiecat.yml in ./config and a .env file with
-# GOODIECAT_APP_TOKEN=<long random string> next to this file, then
-#   docker compose up -d
+# Goodiecat. The installer (install.sh) sets this up for you; to do it by hand,
+# put goodiecat.yml in ./config, create .env with
+#   GOODIECAT_APP_TOKEN=<any long random text>
+#   GOODIECAT_PORT=8080
+# and run `docker compose up -d`.
 services:
   goodiecat:
     image: ghcr.io/goodborn/goodiecat:latest
-    container_name: goodiecat
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "${GOODIECAT_PORT:-8080}:8080"
     env_file: .env
+    environment:
+      # lets the server card show your computer's name and drives
+      - HOST_ETC=/host/etc
     volumes:
       - ./config:/app/config
       - ./assets:/app/assets
-      # container status and start / stop / restart from the app
+      # container status, and start / stop / restart from the app
       - /var/run/docker.sock:/var/run/docker.sock
-      # lets the server card see the host's OS and disks
       - /:/host:ro
-    environment:
-      - HOST_ETC=/host/etc
