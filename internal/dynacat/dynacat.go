@@ -984,6 +984,7 @@ func (a *application) server() (func() error, func() error) {
 	mux.HandleFunc("GET /api/image-proxy/{hash}", a.handleImageProxyRequest)
 	mux.HandleFunc("GET /api/search/autocomplete", a.handleSearchAutocompleteRequest)
 	mux.HandleFunc("GET /api/search/{widget}/targets", a.handleSearchTargetsRequest)
+	a.registerGoodiecatRoutes(mux)
 	mux.HandleFunc("GET /api/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})

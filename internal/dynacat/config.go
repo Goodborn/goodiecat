@@ -69,6 +69,8 @@ type config struct {
 		Head template.HTML `yaml:"head"`
 	} `yaml:"document"`
 
+	Goodiecat goodiecatConfig `yaml:"goodiecat"`
+
 	Theme struct {
 		themeProperties `yaml:",inline"`
 		CustomCSSFile   string `yaml:"custom-css-file"`
