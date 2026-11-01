@@ -8,6 +8,8 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"os"
+	"path/filepath"
 	"regexp"
 	"slices"
 	"strings"
@@ -39,7 +41,23 @@ type goodiecatConfig struct {
 
 const goodiecatTokenHeader = "X-Goodiecat-Token"
 
-var dockerHealthPattern = regexp.MustCompile(`\((healthy|unhealthy|health: starting)\)`)
+var (
+	dockerHealthPattern = regexp.MustCompile(`\((healthy|unhealthy|health: starting)\)`)
+	shortContainerID    = regexp.MustCompile(`^[0-9a-f]{12}$`)
+)
+
+// goodiecatSelfID finds this dashboard's own container. The cgroup file is
+// empty under cgroup v2, but Docker names a container after its short ID
+// unless a hostname is set.
+func goodiecatSelfID() string {
+	if id := getSelfContainerID(); id != "" {
+		return id
+	}
+	if h, err := os.Hostname(); err == nil && shortContainerID.MatchString(h) {
+		return h
+	}
+	return ""
+}
 
 func (a *application) registerGoodiecatRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/goodiecat/host", a.handleGoodiecatHost)
@@ -88,6 +106,12 @@ func (a *application) handleGoodiecatHost(w http.ResponseWriter, r *http.Request
 	for _, err := range errs {
 		slog.Debug("Collecting host info for goodiecat", "error", err)
 	}
+	// inside a container, report the host's name rather than the container's
+	if etc := os.Getenv("HOST_ETC"); etc != "" {
+		if name, err := os.ReadFile(filepath.Join(etc, "hostname")); err == nil && strings.TrimSpace(string(name)) != "" {
+			info.Hostname = strings.TrimSpace(string(name))
+		}
+	}
 	writeGoodiecatJSON(w, http.StatusOK, map[string]any{"ok": true, "data": info})
 }
 
@@ -104,7 +128,7 @@ type goodiecatContainer struct {
 // stopping the dashboard itself (or anything listed) would leave nothing on
 // the phone to start it again with
 func (a *application) isRestartOnly(c dockerCtrlContainerJSON) bool {
-	selfID := getSelfContainerID()
+	selfID := goodiecatSelfID()
 	if selfID != "" && strings.HasPrefix(c.ID, selfID) {
 		return true
 	}

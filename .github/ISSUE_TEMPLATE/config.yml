@@ -1,5 +1,1 @@
-blank_issues_enabled: false
-contact_links:
-  - name: Discord
-    url: https://discord.com/invite/mUqTzrfjFP
-    about: For help, feedback, guides, resources and more
+blank_issues_enabled: true

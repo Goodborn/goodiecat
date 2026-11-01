@@ -1,0 +1,136 @@
+<!doctype html>
+<!-- First-run and "Server settings" screen of the Goodiecat app. Talks to
+     MainActivity through window.GoodiecatApp. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Goodiecat setup</title>
+<style>
+    :root {
+        --bg: #0f1014;
+        --card: #15171e;
+        --surface: #1c1f28;
+        --line: #2a2e3a;
+        --text: #eef0f5;
+        --muted: #8a90a0;
+        --primary: #a78bfa;
+        --bad: #f08080;
+    }
+    * { box-sizing: border-box; }
+    body {
+        margin: 0;
+        min-height: 100vh;
+        padding: 28px 18px 40px;
+        background:
+            radial-gradient(500px 260px at 20% -10%, rgb(167 139 250 / .14), transparent 70%),
+            var(--bg);
+        color: var(--text);
+        font: 15px/1.5 Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+    .wrap { max-width: 440px; margin: 0 auto; }
+    .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; }
+    .brand svg { width: 52px; height: 52px; }
+    h1 { margin: 0; font-size: 24px; letter-spacing: -.01em; }
+    .lead { margin: 2px 0 0; color: var(--muted); font-size: 14px; }
+    .card {
+        padding: 18px 16px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: var(--card);
+    }
+    label { display: block; margin: 14px 0 6px; font-size: 12px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+    label:first-child { margin-top: 0; }
+    input {
+        width: 100%;
+        padding: 12px 14px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--surface);
+        color: var(--text);
+        font: inherit;
+        outline: none;
+    }
+    input:focus { border-color: var(--primary); }
+    .hint { margin-top: 6px; font-size: 13px; color: var(--muted); }
+    button {
+        width: 100%;
+        margin-top: 20px;
+        padding: 13px;
+        border: 0;
+        border-radius: 10px;
+        background: var(--primary);
+        color: #160f2b;
+        font: inherit;
+        font-weight: 650;
+        cursor: pointer;
+    }
+    button:disabled { opacity: .6; }
+    .msg { min-height: 22px; margin-top: 12px; font-size: 14px; text-align: center; color: var(--bad); }
+    code { padding: 1px 5px; border-radius: 5px; background: var(--surface); font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+    <div class="brand">
+        <svg viewBox="0 0 512 512" fill="none" aria-hidden="true">
+            <defs><linearGradient id="f" x1="96" y1="60" x2="420" y2="470" gradientUnits="userSpaceOnUse"><stop stop-color="#9B6BFF"/><stop offset="1" stop-color="#FF6FB5"/></linearGradient></defs>
+            <path d="M78 236 C62 150 70 84 96 58 C112 44 168 82 214 124 C238 118 274 118 298 124 C344 82 400 44 416 58 C442 84 450 150 434 236 C462 278 470 330 450 372 C418 440 342 470 256 470 C170 470 94 440 62 372 C42 330 50 278 78 236 Z" fill="url(#f)"/>
+            <path d="M150 300 C166 276 198 276 214 300 M298 300 C314 276 346 276 362 300" stroke="#2A1840" stroke-width="20" stroke-linecap="round"/>
+            <path d="M240 336 H272 C276 336 278 340 275 343 L260 357 C258 359 254 359 252 357 L237 343 C234 340 236 336 240 336 Z" fill="#2A1840"/>
+        </svg>
+        <div>
+            <h1>Goodiecat</h1>
+            <p class="lead">Connect to your dashboard</p>
+        </div>
+    </div>
+
+    <form class="card" id="form" autocomplete="off">
+        <label for="home">Goodiecat address</label>
+        <input id="home" inputmode="url" placeholder="192.168.1.10:8080" required>
+        <div class="hint">How you open it at home, with the port.</div>
+
+        <label for="remote">Remote address (optional)</label>
+        <input id="remote" inputmode="url" placeholder="100.64.0.10:8080">
+        <div class="hint">Used when the home address doesn't answer, for example your server's Tailscale address. Service links are opened through it too.</div>
+
+        <label for="token">App token (optional)</label>
+        <input id="token" type="password" placeholder="goodiecat.app-token from your config">
+        <div class="hint">Lets you start, stop and restart containers. Set <code>app-token</code> under <code>goodiecat:</code> in goodiecat.yml.</div>
+
+        <button id="save" type="submit">Connect</button>
+        <div class="msg" id="msg" role="status"></div>
+    </form>
+</div>
+<script>
+    var s = JSON.parse(GoodiecatApp.getServer() || '{}');
+    var tokenField = document.getElementById('token');
+    document.getElementById('home').value = s.home || '';
+    document.getElementById('remote').value = s.remote || '';
+    // the saved token is never shown again; leaving the field empty keeps it
+    if (s.hasToken) tokenField.placeholder = 'Saved (leave empty to keep it)';
+
+    var btn = document.getElementById('save');
+    var msg = document.getElementById('msg');
+
+    document.getElementById('form').addEventListener('submit', function (e) {
+        e.preventDefault();
+        btn.disabled = true;
+        btn.textContent = 'Connecting…';
+        msg.textContent = '';
+        var token = tokenField.value;
+        GoodiecatApp.saveServer(
+            document.getElementById('home').value,
+            document.getElementById('remote').value,
+            token,
+            !!s.hasToken && token === '');
+    });
+
+    window.setupResult = function (ok, text) {
+        btn.disabled = false;
+        btn.textContent = 'Connect';
+        msg.textContent = ok ? '' : text;
+    };
+</script>
+</body>
+</html>

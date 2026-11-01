@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Status bar icon: the Goodiecat head as a plain silhouette -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="512" android:viewportHeight="512">
+    <path android:fillColor="#FFFFFFFF" android:pathData="M78 236 C62 150 70 84 96 58 C112 44 168 82 214 124 C238 118 274 118 298 124 C344 82 400 44 416 58 C442 84 450 150 434 236 C462 278 470 330 450 372 C418 440 342 470 256 470 C170 470 94 440 62 372 C42 330 50 278 78 236 Z" />
+</vector>

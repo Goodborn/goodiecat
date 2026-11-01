@@ -1,3 +1,6 @@
+# Builds the Goodiecat Docker image (amd64 + arm64) and pushes it to
+# ghcr.io/<owner>/<repo> for version tags like v1.2.3 and the beta branch.
+# The Android APK is built and attached to releases separately.
 name: Deploy
 
 permissions:
@@ -74,7 +77,7 @@ jobs:
         with:
           images: |
             ghcr.io/${{ env.IMAGE_REPO }}
-            ${{ env.DOCKERHUB_USERNAME != '' && format('docker.io/{0}/dynacat', env.DOCKERHUB_USER_LOWER) || '' }}
+            ${{ env.DOCKERHUB_USERNAME != '' && format('docker.io/{0}/goodiecat', env.DOCKERHUB_USER_LOWER) || '' }}
           tags: |
             type=ref,event=branch
             type=sha,prefix=beta-,enable=${{ github.ref == 'refs/heads/beta' }}
@@ -107,152 +110,3 @@ jobs:
           else
             echo "is_latest=false" >> "${GITHUB_OUTPUT}"
           fi
-
-  release-binaries:
-    # Prerelease tags like v0.6.0-beta.1 only get Docker images.
-    if: startsWith(github.ref, 'refs/tags/') && !contains(github.ref_name, '-')
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        include:
-          - goos: linux
-            goarch: amd64
-          - goos: linux
-            goarch: arm64
-          - goos: linux
-            goarch: '386'
-          - goos: linux
-            goarch: arm
-    env:
-      ASSET: dynacat-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
-    steps:
-      - name: Checkout the target Git reference
-        uses: actions/checkout@v6
-
-      - name: Set up Golang
-        uses: actions/setup-go@v6
-        with:
-          go-version-file: go.mod
-
-      - name: Build binary
-        env:
-          CGO_ENABLED: '0'
-          GOOS: ${{ matrix.goos }}
-          GOARCH: ${{ matrix.goarch }}
-          APP_VERSION: ${{ github.ref_name }}
-        run: go build -ldflags="-X github.com/Panonim/dynacat/internal/dynacat.buildVersion=${APP_VERSION}" -o dynacat .
-
-      - name: Create archive
-        run: tar -czf "${ASSET}" dynacat
-
-      - name: Upload release asset
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload "${GITHUB_REF_NAME}" "${ASSET}" --clobber
-
-  windows-installer:
-    if: startsWith(github.ref, 'refs/tags/') && !contains(github.ref_name, '-')
-    # Native Inno Setup, since Wine in the innosetup image fails on Linux runners.
-    runs-on: windows-latest
-    strategy:
-      matrix:
-        arch: [amd64, arm64]
-    defaults:
-      run:
-        shell: bash
-    env:
-      ARCH: ${{ matrix.arch }}
-      MSYS_NO_PATHCONV: '1'
-    steps:
-      - name: Checkout the target Git reference
-        uses: actions/checkout@v6
-
-      - name: Set up Golang
-        uses: actions/setup-go@v6
-        with:
-          go-version-file: go.mod
-
-      - name: Build icons
-        run: |
-          magick internal/dynacat/static/favicon.png -background none -gravity center -extent 920x920 -resize 256x256 dynacat.png
-          magick dynacat.png -define icon:auto-resize=256,128,64,48,32,16 dynacat.ico
-          magick dynacat.png \
-            -fill '#261F3F' -stroke white -strokewidth 8 -draw 'circle 198,198 198,250' \
-            -stroke none -fill white -draw 'rectangle 189,164 207,198' -draw 'polygon 172,194 224,194 198,222' \
-            -draw 'roundrectangle 172,230 224,238 4,4' \
-            -define icon:auto-resize=256,128,64,48,32,16 windows/setup.ico
-
-      - name: Build binary
-        run: |
-          go run github.com/tc-hib/go-winres@v0.3.3 simply --arch "${ARCH}" --icon dynacat.ico --product-name Dynacat --file-description Dynacat
-          CGO_ENABLED=0 GOARCH="${ARCH}" go build -ldflags "-s -w -X github.com/Panonim/dynacat/internal/dynacat.buildVersion=${GITHUB_REF_NAME}" -o windows/dynacat.exe .
-
-      - name: Build installer
-        run: iscc /DAppVersion="${GITHUB_REF_NAME}" /DArch="${ARCH}" windows/dynacat.iss
-
-      - name: Upload release asset
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload "${GITHUB_REF_NAME}" "windows/output/dynacat-windows-${ARCH}-setup.exe" --clobber
-
-  checksums:
-    needs: [release-binaries, windows-installer]
-    if: ${{ !failure() && !cancelled() && startsWith(github.ref, 'refs/tags/') && !contains(github.ref_name, '-') }}
-    runs-on: ubuntu-slim
-    steps:
-      - name: Generate checksums.txt for every release asset
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REPO: ${{ github.repository }}
-        run: |
-          mkdir assets && cd assets
-          gh release download "${GITHUB_REF_NAME}" --pattern '*' --skip-existing
-          rm -f checksums.txt
-          # dynacat update refuses installers that are not listed here.
-          sha256sum -- * > ../checksums.txt
-          gh release upload "${GITHUB_REF_NAME}" ../checksums.txt --clobber
-
-  notify-discord:
-    needs: [deploy, release-binaries, windows-installer, checksums]
-    if: ${{ !failure() && !cancelled() && startsWith(github.ref, 'refs/tags/') && !contains(github.ref_name, '-') && needs.deploy.outputs.is_latest == 'true' }}
-    runs-on: ubuntu-slim
-    permissions: {}
-    steps:
-      - name: Announce the release on Discord
-        env:
-          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          TAG: ${{ github.ref_name }}
-        run: |
-          if [ -z "${DISCORD_WEBHOOK_URL}" ]; then
-            echo "DISCORD_WEBHOOK_URL is not set, skipping the announcement"
-            exit 0
-          fi
-
-          payload="$(jq -n \
-            --arg version "${TAG#v}" \
-            --arg timestamp "$(TZ=Europe/Warsaw date +%Y-%m-%dT%H:%M:%S.%3N%:z)" \
-            '{
-              username: "Github Update",
-              avatar_url: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/github-light.svg",
-              embeds: [{
-                title: "New Dynacat Release - \($version)",
-                url: "https://github.com/Panonim/dynacat/releases/latest",
-                color: 5793266,
-                timestamp: $timestamp,
-                footer: { text: "Europe/Warsaw" }
-              }]
-            }')"
-
-          status="$(printf 'url = "%s"\n' "${DISCORD_WEBHOOK_URL}" | curl --config - \
-            --silent --show-error --output response.txt --write-out '%{http_code}' \
-            --request POST \
-            --header 'Content-Type: application/json' \
-            --data "${payload}")"
-
-          if [ "${status}" -lt 200 ] || [ "${status}" -ge 300 ]; then
-            echo "Discord webhook failed with HTTP ${status}"
-            cat response.txt
-            exit 1
-          fi
-
-          echo "Announced ${TAG#v} on Discord (HTTP ${status})"

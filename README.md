@@ -1,266 +1,84 @@
-<p align="center"><img width="250px" src="docs/docs/logo.png"></p>
-<h1 align="center">Dynacat</h1>
+<p align="center"><img width="160" src="internal/dynacat/static/favicon.svg" alt="Goodiecat logo"></p>
+<h1 align="center">Goodiecat</h1>
+
+<p align="center">A sleek, compact self-hosted dashboard for your home server, with a companion Android app.<br>
+A fork of <a href="https://github.com/Panonim/dynacat">Dynacat</a>, which is built on <a href="https://github.com/glanceapp/glance">Glance</a>.</p>
+
 <p align="center">
-  <a href="https://dynacat.artur.zone/configuration">Configuration</a> •
-  <a href="https://discord.gg/mUqTzrfjFP">Discord</a> •
-  <a href="https://ko-fi.com/panonim">Sponsor</a> 
-</p>
-<p align="center">
-  <a href="https://github.com/Panonim/dynawidgets">Dynawidgets</a> •
-  <a href="https://github.com/glanceapp/community-widgets">Custom-api widgets</a> •
-  <a href="https://dynacat.artur.zone/preconfigured-pages">Preconfigured pages</a> •
-  <a href="https://dynacat.artur.zone/themes">Themes</a> 
+  <a href="#quick-start">Quick start</a> •
+  <a href="#the-android-app">Android app</a> •
+  <a href="https://dynacat.artur.zone/configuration">Widget reference</a> •
+  <a href="#credits-and-license">Credits</a>
 </p>
 
-<p align="center">Self-hosted dashboard built for people who want their information in one place.<br>Forked from Glance - it focuses on dynamic content updates and seamless integration with external applications.</p>
+## What's different from Dynacat
 
-![](docs/docs/images/readme-main-image.png)
+Everything Dynacat does still works the same way, with the same YAML and the same widgets. On top of that:
 
-## Features List
-### Various widgets
-* RSS feeds
-* Subreddit posts
-* Hacker News posts
-* Weather forecasts
-* YouTube channel uploads
-* Twitch channels
-* Market prices
-* Docker containers status
-* Server stats
-* Custom widgets
-* [and many more...](https://dynacat.artur.zone/configuration#configuring-dynacat)
+* **A new default look.** Inter font, a cool slate and violet palette, compact cards, colored meters, and service tiles with a green or red status dot.
+* **Phones done properly.** Dynacat shows one column at a time on phones and tablets; Goodiecat shows everything, stacked, with the page tabs at the top. Search collapses into an icon.
+* **A server card.** CPU, memory, disks and CPU temperature as colored meters, from Goodiecat's own API. It's in the [example config](examples/goodiecat.yml).
+* **Building blocks for your own widgets.** `gc-meters`, `gc-kpis`, `gc-rail`, `gc-list`, `gc-chip`, `gc-pill` and more, for `custom-api` templates. They're styled in [goodiecat.css](internal/dynacat/static/css/goodiecat.css).
+* **An Android app** with alerts when a container goes down, and start / stop / restart from the dashboard.
 
-### Fast and lightweight
-* Low memory usage
-* Few dependencies
-* Minimal vanilla JS
-* Single <20mb binary available for multiple OSs & architectures and just as small Docker container
-* Uncached pages usually load within ~1s (depending on internet speed and number of widgets)
+Coming from Dynacat? Point Goodiecat at your existing config folder: `dynacat.yml` is picked up as is (or rename it to `goodiecat.yml`).
 
-### Tons of customizability
-* Different layouts
-* As many pages/tabs as you need
-* Numerous configuration options for each widget
-* Multiple styles for some widgets
-* Custom CSS
+## Quick start
 
-### Optimized for mobile devices
-Because you'll want to take it with you on the go.
-
-![](docs/docs/images/mobile-preview.png)
-
-### Themeable
-Easily create your own theme by tweaking a few numbers or choose from one of the [already available themes](https://dynacat.artur.zone/themes).
-
-![](docs/docs/images/themes-example.png)
-
-<br>
-
-### Other features worth mentioning
-* **UI editor** - add pages, drag widgets between columns and change their options from the dashboard itself, Dynacat writes it back into your YAML
-* **Widget editor** - a visual builder for `custom-api` widgets, point it at an API and bind blocks to fields instead of writing the template by hand
-* **Dynawidgets** - ready-made widgets from a community repository, fetched and cached from a single slug
-* **JSON API** - read the data your widgets already fetched from scripts or other apps
-* **Dynamic updates** - widgets refresh on their own, no manual reload
-* **OIDC** - log in through your own identity provider
-* **More widgets** - docker controller, currently playing, latest media, torrenting, speedtest, stopwatch and Sonarr/Radarr releases in the calendar
-
-<br>
-
-## Installation
-There are currently two ways to use Dynacat: the UI editor and editing YAML files manually.
-If you'd like to use the UI, here's the recommended configuration. 
-
-The quickest start is to grab the ready-made directory structure:
+With Docker:
 
 ```bash
-mkdir dynacat && cd dynacat && \
-curl -sL https://github.com/Panonim/dynacat-compose-template/releases/latest/download/dynacat.tar.gz | tar -xzf - && \
+git clone https://github.com/Goodborn/goodiecat.git
+cd goodiecat/examples
+mkdir -p config && cp goodiecat.yml config/
+echo "GOODIECAT_APP_TOKEN=$(openssl rand -hex 24)" > .env
 docker compose up -d
 ```
 
-<details>
-<summary><strong>Docker compose file</strong></summary>
-<br>
+Then open `http://<your-server>:8080`. Edit `config/goodiecat.yml` (the parts marked `CHANGE`), and the dashboard reloads by itself.
+
+The compose file uses `ghcr.io/goodborn/goodiecat:latest`. To build the image yourself instead, run `docker build -t goodiecat .` in the repo root and use `image: goodiecat` in the compose file.
+
+The full widget reference is Dynacat's: [dynacat.artur.zone/configuration](https://dynacat.artur.zone/configuration).
+
+## The `goodiecat:` config section
 
 ```yaml
-services:
-  dynacat:
-    container_name: dynacat
-    image: panonim/dynacat
-    restart: unless-stopped
-    volumes:
-      - ./config:/app/config
-      - ./assets:/app/assets
-      - /etc/localtime:/etc/localtime:ro
-      # Optionally, also mount docker socket if you want to use the docker containers widget
-      # - /var/run/docker.sock:/var/run/docker.sock:ro
-    # You can also use the assets as non-root easily
-    # environment:
-      # - PUID=1000
-      # - PGID=1000
-    ports:
-      - 8080:8080
-    env_file: .env
-```
-</details>
-
-orr you can just be *that* guy and click here...
-
-<a href="https://github.com/Panonim/dynacat/releases/latest/download/dynacat-windows-amd64-setup.exe"><img alt="Just install button" width="200px" src="docs/docs/images/install_button.svg"></a>
-
-## Configuration
-There are two ways to configure Dynacat, and they work on the same files:
-
-* **UI editor** - drag widgets into columns, change their options and pick your colors from the dashboard itself. Dynacat writes the result back into your YAML. See the [UI editor documentation](https://dynacat.artur.zone/ui-editor).
-* **YAML by hand** - edit the config files directly. To learn more about how the layout works, how to add more pages and how to configure widgets, visit the [configuration documentation](https://dynacat.artur.zone/configuration#configuring-dynacat).
-
-The editor is an addition to the config file, not a replacement, so hand-written config keeps working exactly as before.
-
-<details>
-<summary><strong>Preview example configuration file</strong></summary>
-<br>
-
-```yaml
-  - name: Home
-    columns:
-      - size: small
-        widgets:
-          - type: calendar
-            first-day-of-week: monday
-
-          - type: rss
-            limit: 10
-            collapse-after: 3
-            cache: 12h
-            feeds:
-              - url: https://selfh.st/rss/
-                title: selfh.st
-                limit: 4
-              - url: https://ciechanow.ski/atom.xml
-              - url: https://www.joshwcomeau.com/rss.xml
-                title: Josh Comeau
-              - url: https://samwho.dev/rss.xml
-              - url: https://ishadeed.com/feed.xml
-                title: Ahmad Shadeed
-
-          - type: twitch-channels
-            channels:
-              - theprimeagen
-              - j_blow
-              - piratesoftware
-              - cohhcarnage
-              - christitustech
-              - EJ_SA
-
-      - size: full
-        widgets:
-          - type: group
-            widgets:
-              - type: hacker-news
-              - type: lobsters
-
-          - type: videos
-            channels:
-              - UCXuqSBlHAE6Xw-yeJA0Tunw # Linus Tech Tips
-              - UCR-DXc1voovS8nhAvccRZhg # Jeff Geerling
-              - UCsBjURrPoezykLs9EqgamOA # Fireship
-              - UCBJycsmduvYEL83R_U4JriQ # Marques Brownlee
-              - UCHnyfMqiRRG1u-2MsSQLbXA # Veritasium
-
-          - type: group
-            widgets:
-              - type: reddit
-                subreddit: technology
-                show-thumbnails: true
-              - type: reddit
-                subreddit: selfhosted
-                show-thumbnails: true
-
-      - size: small
-        widgets:
-          - type: weather
-            location: London, United Kingdom
-            units: metric
-            hour-format: 12h
-
-          - type: markets
-            markets:
-              - symbol: SPY
-                name: S&P 500
-              - symbol: BTC-USD
-                name: Bitcoin
-              - symbol: NVDA
-                name: NVIDIA
-              - symbol: AAPL
-                name: Apple
-              - symbol: MSFT
-                name: Microsoft
-
-          - type: releases
-            cache: 1d
-            repositories:
-              - panonim/dynacat
-              - go-gitea/gitea
-              - immich-app/immich
-              - syncthing/syncthing
-```
-</details>
-
-## Common issues
-<details>
-<summary><strong>Requests timing out</strong></summary>
-
-The most common cause of this is when using Pi-Hole, AdGuard Home or other ad-blocking DNS services, which by default have a fairly low rate limit. Depending on the number of widgets you have in a single page, this limit can very easily be exceeded. To fix this, increase the rate limit in the settings of your DNS service.
-
-If using Podman, in some rare cases the timeout can be caused by an unknown issue, in which case it may be resolved by adding the following to the bottom of your `docker-compose.yml` file:
-```yaml
-networks:
-  podman:
-    external: true
-```
-</details>
-
-<details>
-<summary><strong>Broken layout for markets, bookmarks or other widgets</strong></summary>
-
-This is almost always caused by the browser extension Dark Reader. To fix this, disable dark mode for the domain where Dynacat is hosted.
-</details>
-
-<details>
-<summary><strong>cannot unmarshal !!map into []dynacat.page</strong></summary>
-
-The most common cause of this is having a `pages` key in your `dynacat.yml` and then also having a `pages` key inside one of your included pages. To fix this, remove the `pages` key from the top of your included pages.
-
-</details>
-
-<details>
-<summary><strong>Cannot embed Dynacat in an iframe</strong></summary>
-
-By default Dynacat only allows itself to be embedded on the same origin (`frame-ancestors 'self'`). To allow embedding from another host such as Homepage, add the `allowed-embed-hosts` option under `server` in your `dynacat.yml`:
-
-```yaml
-server:
-  allowed-embed-hosts:
-    - https://homepage.mydomain.com
+goodiecat:
+  # needed for start / stop / restart from the app; any long random string
+  app-token: ${GOODIECAT_APP_TOKEN}
+  docker:
+    sock-path: /var/run/docker.sock   # or tcp://your-docker-socket-proxy:2375
+    restart-only: [traefik]           # can be restarted from the app, never stopped
+  host:                               # disks shown on the server card
+    hide-mountpoints-by-default: true
+    mountpoints:
+      "/host": { name: System, hide: false }
 ```
 
-You can list multiple origins. Each entry must be a full origin including the scheme (e.g. `https://`).
+It adds three endpoints:
 
-</details>
+| Endpoint | What it's for |
+| --- | --- |
+| `GET /api/goodiecat/host` | CPU, memory, disks and temperature for the server card |
+| `GET /api/goodiecat/containers` | Container names, states and health (the app's alerts) |
+| `POST /api/goodiecat/containers/{start,stop,restart}` | Container control; needs the `X-Goodiecat-Token` header |
 
-<br>
+The read-only endpoints follow the dashboard's own login if you've set one up, or accept the token. Control always needs the token. Goodiecat's own container can only be restarted, never stopped.
 
-<div style='text-align: center;'>
+## The Android app
 
-**If you like this project, please consider [sponsoring](https://ko-fi.com/panonim).**
+Get **Goodiecat.apk** from the [latest release](https://github.com/Goodborn/goodiecat/releases/latest). Android 8 or newer.
 
-<div style="display: flex; justify-content: center;">
-  <a href="https://www.star-history.com/?repos=panonim%2Fdynacat&type=date&legend=top-left">
-   <picture>
-     <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=panonim/dynacat&type=date&theme=dark&legend=top-left" />
-     <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=panonim/dynacat&type=date&legend=top-left" />
-     <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=panonim/dynacat&type=date&legend=top-left" />
-   </picture>
-  </a>
-</div>
+* **Setup:** enter your dashboard's address (for example `192.168.1.10:8080`). You can add a remote address too, such as the server's Tailscale address; the app uses it whenever home doesn't answer. You can also add the app token.
+* **Tap a service** to open its page inside the app, or to start, stop or restart it.
+* **Alerts** when a running container stops or turns unhealthy, optionally also when it's back up. You can switch them on and off from the gear icon next to search. The app checks about every 15 minutes in the background, using Android's battery-friendly job scheduler. With both alerts off, nothing runs at all.
+* **Service links work away from home too:** links to your server's home address are opened through the remote address, as long as it's the same machine on the same ports (like Tailscale).
+
+To build it yourself, run `./gradlew assembleRelease` in [`android/`](android). Without a `keystore.properties` it's signed with the debug key.
+
+## Credits and license
+
+Goodiecat is a fork of [Dynacat](https://github.com/Panonim/dynacat) by Panonim, which is a fork of [Glance](https://github.com/glanceapp/glance) by svilenmarkov and contributors. Nearly everything here is their work, and all the credit for it goes to them.
+
+Like both of them, Goodiecat is licensed under the [GNU AGPL v3](LICENSE). The bundled [Inter](https://rsms.me/inter/) font is under the [SIL Open Font License 1.1](internal/dynacat/static/fonts/Inter-LICENSE.txt).

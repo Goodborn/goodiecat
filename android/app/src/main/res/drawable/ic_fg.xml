@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Goodiecat's happy cat (internal/dynacat/static/favicon.svg), sized into the adaptive icon safe zone -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="1064" android:viewportHeight="1064">
+    <group android:translateX="276" android:translateY="276">
+        <path android:pathData="M78 236 C62 150 70 84 96 58 C112 44 168 82 214 124 C238 118 274 118 298 124 C344 82 400 44 416 58 C442 84 450 150 434 236 C462 278 470 330 450 372 C418 440 342 470 256 470 C170 470 94 440 62 372 C42 330 50 278 78 236 Z">
+            <aapt:attr name="android:fillColor">
+                <gradient android:type="linear"
+                    android:startX="96" android:startY="60" android:endX="420" android:endY="470">
+                    <item android:offset="0" android:color="#FF9B6BFF" />
+                    <item android:offset="1" android:color="#FFFF6FB5" />
+                </gradient>
+            </aapt:attr>
+        </path>
+        <path android:fillColor="#2A1840" android:fillAlpha="0.35" android:pathData="M112 98 C128 102 160 126 182 146 C160 156 140 172 124 192 C114 158 108 122 112 98 Z" />
+        <path android:fillColor="#2A1840" android:fillAlpha="0.35" android:pathData="M400 98 C384 102 352 126 330 146 C352 156 372 172 388 192 C398 158 404 122 400 98 Z" />
+        <path android:strokeColor="#2A1840" android:strokeWidth="20" android:strokeLineCap="round" android:pathData="M150 300 C166 276 198 276 214 300" />
+        <path android:strokeColor="#2A1840" android:strokeWidth="20" android:strokeLineCap="round" android:pathData="M298 300 C314 276 346 276 362 300" />
+        <path android:fillColor="#2A1840" android:pathData="M240 336 H272 C276 336 278 340 275 343 L260 357 C258 359 254 359 252 357 L237 343 C234 340 236 336 240 336 Z" />
+        <path android:strokeColor="#2A1840" android:strokeWidth="10" android:strokeLineCap="round" android:pathData="M256 358 C256 378 240 388 226 382 M256 358 C256 378 272 388 286 382" />
+        <path android:fillColor="#FFB3D9" android:fillAlpha="0.55" android:pathData="M128,350 a22,22 0 1,0 44,0 a22,22 0 1,0 -44,0 Z" />
+        <path android:fillColor="#FFB3D9" android:fillAlpha="0.55" android:pathData="M340,350 a22,22 0 1,0 44,0 a22,22 0 1,0 -44,0 Z" />
+    </group>
+</vector>

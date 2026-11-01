@@ -1,0 +1,119 @@
+# Example Goodiecat config: a server card, your containers with live status,
+# and the weather. Copy it to config/goodiecat.yml next to docker-compose.yml
+# and change the bits marked CHANGE.
+
+server:
+  port: 8080
+  # the in-browser editor rewrites this file; only turn it on behind a login
+  allow-editing: false
+
+goodiecat:
+  # Lets the phone app start / stop / restart containers. Use a long random
+  # string, e.g. `openssl rand -hex 24`, and enter the same one in the app.
+  app-token: ${GOODIECAT_APP_TOKEN}
+  docker:
+    sock-path: /var/run/docker.sock
+    # can be restarted from the app but never stopped (the dashboard itself
+    # always is); CHANGE to your reverse proxy, VPN, ...
+    restart-only: []
+  # disks for the server card. The compose file mounts the host's / at
+  # /host; CHANGE or add your other drives (mount them into the container too)
+  host:
+    hide-mountpoints-by-default: true
+    mountpoints:
+      "/host":
+        name: System
+        hide: false
+
+pages:
+  - name: Home
+    width: wide
+    head-widgets:
+      - type: search
+        hide-header: true
+        search-engine: duckduckgo
+      - type: clock
+        hide-header: true
+        hour-format: 24h
+
+    columns:
+      - size: full
+        widgets:
+          # CPU, memory, disks and temperature from goodiecat's own API
+          - type: custom-api
+            title: Server
+            title-icon: mdi:server
+            cache: 10s
+            update-interval: 10s
+            url: http://localhost:8080/api/goodiecat/host
+            headers:
+              X-Goodiecat-Token: ${GOODIECAT_APP_TOKEN}
+            template: |
+              {{ $h := .JSON }}
+              {{ $cpu := $h.Int "data.cpu.load1_percent" }}
+              {{ $mem := $h.Int "data.memory.used_percent" }}
+              <div class="gc-host">
+                <span class="gc-dot gc-dot-ok"></span>
+                <span class="gc-host-name">{{ $h.String "data.hostname" }}</span>
+                <span class="gc-muted">{{ $h.String "data.platform" }}</span>
+                <span class="gc-host-up">up <span {{ $h.String "data.boot_time" | parseTime "unix" | toRelativeTime }}></span></span>
+              </div>
+              <div class="gc-meters">
+                <div class="gc-meter{{ if gt $cpu 85 }} gc-meter-bad{{ else if gt $cpu 60 }} gc-meter-warn{{ end }}">
+                  <div class="gc-meter-head"><span>CPU</span><b>{{ $cpu }}<small>%</small></b></div>
+                  <div class="gc-meter-bar"><div style="width: {{ $cpu }}%"></div></div>
+                  <div class="gc-meter-sub">15 min average {{ $h.Int "data.cpu.load15_percent" }}%</div>
+                </div>
+                <div class="gc-meter{{ if gt $mem 90 }} gc-meter-bad{{ else if gt $mem 75 }} gc-meter-warn{{ end }}">
+                  <div class="gc-meter-head"><span>Memory</span><b>{{ $mem }}<small>%</small></b></div>
+                  <div class="gc-meter-bar"><div style="width: {{ $mem }}%"></div></div>
+                  <div class="gc-meter-sub">{{ formatBytes (mul ($h.Int "data.memory.used_mb") 1048576) }} of {{ formatBytes (mul ($h.Int "data.memory.total_mb") 1048576) }}</div>
+                </div>
+                {{ range $h.Array "data.mountpoints" }}
+                {{ $pct := .Int "used_percent" }}
+                <div class="gc-meter{{ if gt $pct 92 }} gc-meter-bad{{ else if gt $pct 80 }} gc-meter-warn{{ end }}">
+                  <div class="gc-meter-head"><span>{{ .String "name" }}</span><b>{{ $pct }}<small>%</small></b></div>
+                  <div class="gc-meter-bar"><div style="width: {{ $pct }}%"></div></div>
+                  <div class="gc-meter-sub">{{ formatBytes (mul (sub (.Int "total_mb") (.Int "used_mb")) 1048576) }} free of {{ formatBytes (mul (.Int "total_mb") 1048576) }}</div>
+                </div>
+                {{ end }}
+                {{ if $h.Bool "data.cpu.temperature_is_available" }}
+                {{ $t := $h.Int "data.cpu.temperature_c" }}
+                <div class="gc-meter">
+                  <div class="gc-meter-head"><span>CPU temp</span><b class="{{ if gt $t 70 }}gc-heat-hot{{ else if gt $t 50 }}gc-heat-warm{{ else }}gc-heat-cool{{ end }}">{{ $t }}<small>°C</small></b></div>
+                  <div class="gc-heat"><div style="--p: {{ $t }}"></div></div>
+                  <div class="gc-meter-sub">0 – 100 °C scale</div>
+                </div>
+                {{ end }}
+              </div>
+
+          # every container listed under `containers:` shows with a green
+          # (running) or red (stopped / unhealthy) dot; in the app, tap one to
+          # open it or start / stop / restart it
+          - type: docker-containers
+            title: Services
+            title-icon: mdi:docker
+            sock-path: /var/run/docker.sock
+            hide-by-default: true
+            update-interval: 30s
+            containers:
+              # CHANGE: the key is the container name
+              goodiecat:
+                name: Goodiecat
+                description: This dashboard
+                url: http://YOUR-SERVER:8080
+                icon: mdi:cat
+                hide: false
+              # jellyfin:
+              #   name: Jellyfin
+              #   description: Movies and shows
+              #   url: http://YOUR-SERVER:8096
+              #   icon: sh:jellyfin
+              #   hide: false
+
+      - size: small
+        widgets:
+          - type: weather
+            location: London, United Kingdom # CHANGE
+            units: metric
+            hour-format: 24h
