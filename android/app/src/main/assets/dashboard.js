@@ -210,7 +210,7 @@
             '<div class="gc-sheet-actions">' +
             (info.url
                 ? '<button class="gc-act gc-act-open" data-action="open">' + ICONS.open + '<span>Open ' + esc(info.name) +
-                  '</span></button><div class="gc-act-sep"></div>'
+                  ' in browser</span></button><div class="gc-act-sep"></div>'
                 : '') +
             button('start', 'Start', running || !canControl) +
             button('restart', 'Restart', !running || !canControl) +

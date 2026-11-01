@@ -61,27 +61,26 @@ public class MainActivity extends Activity {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest req) {
                 Uri url = req.getUrl();
+                if (isDashboard(url.toString())) return false;
                 if (server.ownsHost(url.getHost())) {
-                    // service pages open in here too. Dashboard links usually use
-                    // the home address, so swap in whichever one works right now
-                    // (same machine, same ports, e.g. over Tailscale)
+                    // service pages (qBittorrent, Radarr, ...) open in the phone's
+                    // browser, which handles their logins and downloads properly.
+                    // Dashboard links usually use the home address, so swap in
+                    // whichever one works right now (same machine and ports, e.g.
+                    // over Tailscale)
                     String want = Server.host(base);
-                    if (want.isEmpty() || want.equalsIgnoreCase(url.getHost())) return false;
-                    String port = url.getPort() > 0 ? ":" + url.getPort() : "";
-                    view.loadUrl(url.buildUpon().encodedAuthority(want + port).build().toString());
-                    return true;
+                    if (!want.isEmpty() && !want.equalsIgnoreCase(url.getHost())) {
+                        String port = url.getPort() > 0 ? ":" + url.getPort() : "";
+                        url = url.buildUpon().encodedAuthority(want + port).build();
+                    }
                 }
-                // everything else (GitHub, IMDb, ...) opens in the browser
-                startActivity(new Intent(Intent.ACTION_VIEW, url));
+                openInBrowser(url);
                 return true;
             }
 
             @Override
             public void doUpdateVisitedHistory(WebView view, String url, boolean isReload) {
                 trustedPage = isDashboard(url) || url.startsWith(SETUP_PAGE);
-                // pull-to-refresh fights the inner scrolling of the services' own
-                // pages, so keep it to the dashboard (and the error page)
-                swipe.setEnabled(failed || isDashboard(url));
             }
 
             @Override
@@ -233,6 +232,14 @@ public class MainActivity extends Activity {
                     }
                 });
             }).start();
+        }
+    }
+
+    void openInBrowser(Uri url) {
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW, url).addCategory(Intent.CATEGORY_BROWSABLE));
+        } catch (Exception e) {
+            Toast.makeText(this, "No browser to open " + url.getHost(), Toast.LENGTH_LONG).show();
         }
     }
 
