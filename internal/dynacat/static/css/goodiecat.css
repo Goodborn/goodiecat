@@ -1,0 +1,1497 @@
+/* ============================================================
+   Goodiecat look: loaded last in the bundle, on top of Dynacat's
+   styles. Sections:
+     base · header · widgets · server card · KPI strip · services
+     posters · lists · pills · alerts · now playing · stock widgets
+     responsive
+   The .gc-* classes are building blocks for custom-api templates
+   (see docs/goodiecat.md).
+   ============================================================ */
+
+@font-face {
+    font-family: "Inter";
+    src: url("../fonts/InterVariable.woff2") format("woff2");
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+}
+
+:root {
+    /* Goodiecat's default palette: cool slate, violet accent, green for healthy.
+       A theme set in goodiecat.yml (or the theme picker) still overrides these. */
+    --bgh: 228;
+    --bgs: 16%;
+    --bgl: 7%;
+    --cm: 1.15;
+    --tsm: 0.6;
+    --color-primary: hsl(258, 90%, 70%);
+    --color-positive: hsl(152, 58%, 52%);
+    --color-negative: hsl(0, 78%, 68%);
+
+    --border-radius: 10px;
+    --widget-gap: 16px;
+    --widget-content-vertical-padding: 14px;
+    --widget-content-horizontal-padding: 16px;
+    --gc-radius-sm: 7px;
+    --gc-surface: var(--color-widget-background-highlight);
+    --gc-line: var(--color-widget-content-border);
+    --gc-hover: color-mix(in srgb, var(--color-primary) 8%, var(--gc-surface));
+    --gc-hover-line: color-mix(in srgb, var(--color-primary) 45%, var(--gc-line));
+}
+
+/* ---------- base ---------- */
+
+body {
+    font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 1.35rem;
+    font-feature-settings: "cv11", "ss01", "tnum";
+    letter-spacing: -0.005em;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    background:
+        radial-gradient(900px 420px at 15% -10%, color-mix(in srgb, var(--color-primary) 9%, transparent), transparent 70%),
+        radial-gradient(700px 380px at 95% 0%, color-mix(in srgb, var(--color-positive) 5%, transparent), transparent 70%),
+        var(--color-background);
+    background-attachment: fixed;
+}
+
+::selection {
+    background: color-mix(in srgb, var(--color-primary) 35%, transparent);
+}
+
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-progress-border) transparent;
+}
+
+/* Dynacat's huge mobile page title just pushes content below the fold. */
+.mobile-reachability-header {
+    display: none !important;
+}
+
+/* ---------- header ---------- */
+
+.header-container {
+    margin-top: 12px;
+    --header-height: 50px;
+}
+
+.header {
+    gap: 6px;
+    backdrop-filter: blur(10px);
+}
+
+.logo {
+    padding-right: 14px;
+    border-right-color: var(--gc-line);
+}
+
+.logo-svg {
+    width: 26px;
+    height: auto;
+}
+
+.nav {
+    gap: 4px;
+}
+
+.nav .nav-item {
+    height: auto;
+    align-self: center;
+    padding: 6px 12px;
+    border: 0;
+    border-radius: 999px;
+    font-size: 1.3rem;
+    line-height: 1.4;
+    font-weight: 500;
+    color: var(--color-text-subdue);
+    transition: background 0.15s, color 0.15s;
+}
+
+.nav .nav-item:hover {
+    color: var(--color-text-highlight);
+    background: var(--gc-surface);
+}
+
+.nav .nav-item.nav-item-current {
+    color: var(--color-text-highlight);
+    background: color-mix(in srgb, var(--color-primary) 16%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 30%, transparent);
+}
+
+.nav-keybind-hint {
+    display: none;
+}
+
+/*
+   Search lives as a round icon at the top right of the nav bar and opens
+   into a field when clicked (or with the S shortcut). The widget sits in
+   the head row in the DOM, so it is lifted up beside the theme picker.
+*/
+.body-content {
+    position: relative;
+    --gc-search-top: 19px;
+    --gc-search-right: calc(var(--content-bounds-padding) + var(--widget-content-horizontal-padding) + 61px);
+}
+
+.head-widgets {
+    display: flex;
+    align-items: stretch;
+    gap: var(--widget-gap);
+}
+
+.head-widgets > .widget-type-clock {
+    flex: 1 1 auto;
+}
+
+.head-widgets .widget-content {
+    height: 100%;
+}
+
+.head-widgets > .widget-type-search {
+    position: absolute;
+    z-index: 13;
+    top: var(--gc-search-top);
+    right: calc(max(0px, (100% - 1920px) / 2) + var(--gc-search-right));
+    width: 36px;
+    height: 36px;
+    transition: width 0.2s ease;
+}
+
+.head-widgets > .widget-type-search:focus-within {
+    width: min(440px, calc(100vw - 2 * var(--content-bounds-padding)));
+}
+
+.widget-type-search .widget-content {
+    padding: 0;
+    border: 0;
+    background: none;
+    box-shadow: none;
+}
+
+.widget-type-search .search {
+    position: relative;
+    height: 36px;
+    min-height: 0;
+    gap: 8px;
+    padding: 0 9px;
+    border-radius: 999px;
+    border-color: var(--gc-line);
+    background: var(--gc-surface);
+    box-shadow: none;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.widget-type-search .search:hover {
+    border-color: var(--gc-hover-line);
+    background: var(--gc-hover);
+}
+
+.widget-type-search .search-icon-container {
+    flex-shrink: 0;
+    pointer-events: none;
+}
+
+.widget-type-search .search-icon {
+    width: 1.7rem;
+}
+
+.widget-type-search .search-form {
+    flex: 1;
+    min-width: 0;
+}
+
+/* collapsed: the invisible input covers the whole button so a tap focuses it */
+.widget-type-search:not(:focus-within) .search-input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.widget-type-search:not(:focus-within) kbd,
+.widget-type-search:not(:focus-within) .search-bang {
+    display: none;
+}
+
+.widget-type-search:focus-within .search {
+    padding: 0 12px;
+    border-color: var(--gc-hover-line);
+    background: var(--color-widget-background);
+    box-shadow: 0 10px 30px -10px rgb(0 0 0 / 0.7);
+    cursor: text;
+}
+
+.search-input {
+    font-size: 1.4rem;
+}
+
+.widget-type-clock .widget-content {
+    /* size containment would collapse the max-content width to zero */
+    container-type: normal;
+    display: flex;
+    align-items: center;
+    padding-block: 6px;
+}
+
+.widget-type-clock .clock {
+    flex: 1;
+}
+
+.widget-type-clock .clock > div {
+    gap: 18px;
+}
+
+.widget-type-clock .size-h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.widget-type-clock .clock-time {
+    font-variant-numeric: tabular-nums;
+    color: var(--color-text-highlight);
+}
+
+.widget-type-clock [data-year],
+.widget-type-clock [data-weekday] {
+    font-size: 1.1rem;
+    color: var(--color-text-subdue);
+}
+
+/* ---------- widget chrome ---------- */
+
+.widget-content:not(.widget-content-frameless),
+.widget-content-frame {
+    border-color: var(--gc-line);
+    box-shadow: 0 1px 0 0 color-mix(in srgb, white 3%, transparent) inset, 0 8px 24px -16px rgb(0 0 0 / 0.6);
+}
+
+.widget-header {
+    margin-bottom: 8px;
+    font-size: 1.15rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+}
+
+.widget-header,
+.widget-header a {
+    color: var(--color-text-subdue);
+}
+
+.widget-header a:hover {
+    color: var(--color-text-highlight);
+}
+
+.widget-title-icon {
+    width: 1.5rem;
+    height: 1.5rem;
+}
+
+.widget-beta-icon {
+    display: none;
+}
+
+/* ---------- KPI strip ---------- */
+
+.widget:has(> .widget-content .gc-kpis) > .widget-content {
+    padding: 0;
+    border: 0;
+    background: none;
+    box-shadow: none;
+}
+
+.gc-kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+}
+
+.gc-kpi {
+    position: relative;
+    display: block;
+    min-width: 0;
+    padding: 12px 14px 11px;
+    overflow: hidden;
+    border: 1px solid var(--gc-line);
+    border-radius: var(--border-radius);
+    background: var(--color-widget-background);
+    color: inherit;
+    text-decoration: none;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.gc-kpi::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 3px;
+    background: var(--color-primary);
+    opacity: 0.55;
+}
+
+a.gc-kpi:hover {
+    border-color: var(--gc-hover-line);
+    background: var(--gc-hover);
+}
+
+.gc-kpi-warn::before { background: var(--color-upcoming); opacity: 0.9; }
+.gc-kpi-bad::before { background: var(--color-negative); opacity: 0.9; }
+.gc-kpi-live::before { background: var(--color-positive); opacity: 0.9; }
+
+.gc-kpi-label {
+    overflow: hidden;
+    font-size: 1.05rem;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--color-text-subdue);
+}
+
+.gc-kpi-value {
+    margin-top: 2px;
+    font-size: 2.6rem;
+    font-weight: 650;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    color: var(--color-text-highlight);
+}
+
+.gc-kpi-value-sm {
+    font-size: 2.1rem;
+    line-height: 1.37;
+}
+
+.gc-kpi-of {
+    margin-left: 1px;
+    font-size: 1.5rem;
+    font-weight: 500;
+    color: var(--color-text-subdue);
+}
+
+.gc-kpi-sub {
+    margin-top: 2px;
+    overflow: hidden;
+    font-size: 1.12rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--color-text-subdue);
+}
+
+.gc-kpi-warn .gc-kpi-sub { color: color-mix(in srgb, var(--color-upcoming) 80%, var(--color-text-subdue)); }
+.gc-kpi-bad .gc-kpi-sub { color: var(--color-negative); }
+
+/* ---------- server card ---------- */
+
+.gc-host {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 10px;
+    margin-bottom: 12px;
+    font-size: 1.15rem;
+}
+
+.gc-host-name {
+    font-size: 1.4rem;
+    font-weight: 650;
+    color: var(--color-text-highlight);
+}
+
+.gc-host-up {
+    margin-left: auto;
+    font-size: 1.3rem;
+    font-weight: 500;
+    color: var(--color-text-paragraph);
+}
+
+.gc-meters {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 10px;
+}
+
+.gc-meter {
+    --gc-meter-color: var(--color-primary);
+    min-width: 0;
+    padding: 10px 12px;
+    border: 1px solid var(--gc-line);
+    border-radius: var(--gc-radius-sm);
+    background: var(--gc-surface);
+}
+
+.gc-meter-warn { --gc-meter-color: var(--color-upcoming); }
+.gc-meter-bad { --gc-meter-color: var(--color-negative); }
+
+.gc-meter-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.gc-meter-head > span {
+    font-size: 1.05rem;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--color-text-subdue);
+}
+
+.gc-meter-head b {
+    font-size: 2.2rem;
+    font-weight: 650;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-text-highlight);
+}
+
+.gc-meter-head small {
+    margin-left: 1px;
+    font-size: 1.2rem;
+    font-weight: 500;
+    color: var(--color-text-subdue);
+}
+
+.gc-meter-bar {
+    height: 5px;
+    margin: 7px 0 6px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--color-progress-border);
+}
+
+.gc-meter-bar > div {
+    height: 100%;
+    max-width: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, color-mix(in srgb, var(--gc-meter-color) 45%, transparent), var(--gc-meter-color));
+    box-shadow: 0 0 8px -1px color-mix(in srgb, var(--gc-meter-color) 60%, transparent);
+    transition: width 0.6s ease;
+}
+
+.gc-meter-sub {
+    overflow: hidden;
+    font-size: 1.08rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--color-text-subdue);
+}
+
+/* temperature tile: a 0–100 °C heat scale, cool cyan through to hot red */
+.gc-heat {
+    --gc-heat-scale: linear-gradient(90deg,
+        hsl(195 85% 58%) 0%,
+        var(--color-positive) 35%,
+        var(--color-upcoming) 62%,
+        var(--color-negative) 85%);
+    position: relative;
+    height: 5px;
+    margin: 7px 0 6px;
+    border-radius: 999px;
+    background: var(--color-progress-border);
+}
+
+/* the fill shows the slice of the scale up to the reading, so colour = heat */
+.gc-heat > div {
+    width: calc(min(var(--p), 100) * 1%);
+    height: 100%;
+    border-radius: inherit;
+    background: var(--gc-heat-scale);
+    background-size: calc(10000% / max(var(--p), 1)) 100%;
+    transition: width 0.6s ease;
+}
+
+.gc-heat > div::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: calc(min(var(--p), 100) * 1%);
+    width: 9px;
+    height: 9px;
+    border: 2px solid var(--gc-surface);
+    border-radius: 50%;
+    background: currentColor;
+    transform: translate(-50%, -50%);
+}
+
+.gc-heat-sm {
+    flex: 1;
+    height: 3px;
+    margin: 0;
+}
+
+.gc-heat-sm > div::after {
+    width: 7px;
+    height: 7px;
+    border-width: 1.5px;
+}
+
+.gc-temps {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+    gap: 2px 12px;
+}
+
+.gc-temp {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    min-width: 0;
+    font-size: 1.08rem;
+    color: var(--color-text-subdue);
+}
+
+.gc-temp b {
+    min-width: 2.2em;
+    text-align: right;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.gc-heat-cool { color: hsl(185 75% 62%); }
+.gc-heat-warm { color: var(--color-upcoming); }
+.gc-heat-hot { color: var(--color-negative); }
+
+.gc-meter:has(.gc-heat) .gc-meter-head b.gc-heat-cool { color: hsl(185 75% 62%); }
+.gc-meter:has(.gc-heat) .gc-meter-head b.gc-heat-warm { color: var(--color-upcoming); }
+.gc-meter:has(.gc-heat) .gc-meter-head b.gc-heat-hot { color: var(--color-negative); }
+
+/* the dot on each heat bar takes the reading's colour */
+.gc-meter-head:has(.gc-heat-cool) + .gc-heat,
+.gc-temp:has(.gc-heat-cool) .gc-heat { color: hsl(185 75% 62%); }
+.gc-meter-head:has(.gc-heat-warm) + .gc-heat,
+.gc-temp:has(.gc-heat-warm) .gc-heat { color: var(--color-upcoming); }
+.gc-meter-head:has(.gc-heat-hot) + .gc-heat,
+.gc-temp:has(.gc-heat-hot) .gc-heat { color: var(--color-negative); }
+
+/* ---------- legacy stat tiles (Media / Requests pages) ---------- */
+
+.gc-stat-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
+    gap: 8px;
+}
+
+.gc-stat {
+    min-width: 0;
+    padding: 9px 11px;
+    border: 1px solid var(--gc-line);
+    border-radius: var(--gc-radius-sm);
+    background: var(--gc-surface);
+}
+
+.gc-stat-value {
+    font-size: 2rem;
+    font-weight: 650;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    color: var(--color-text-highlight);
+}
+
+.gc-stat-value-sm {
+    font-size: 1.6rem;
+    line-height: 1.375;
+}
+
+.gc-stat-label {
+    margin-top: 2px;
+    overflow: hidden;
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--color-text-subdue);
+}
+
+.gc-section-label {
+    margin: 14px 0 8px;
+    font-size: 1.05rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-text-subdue);
+}
+
+.gc-muted {
+    color: var(--color-text-subdue);
+}
+
+.gc-accent {
+    color: var(--color-primary);
+}
+
+.gc-empty {
+    padding: 14px;
+    border: 1px dashed var(--gc-line);
+    border-radius: var(--gc-radius-sm);
+    text-align: center;
+    font-size: 1.2rem;
+    color: var(--color-text-subdue);
+}
+
+.gc-empty-bad {
+    border-color: color-mix(in srgb, var(--color-negative) 40%, transparent);
+    color: var(--color-negative);
+}
+
+.gc-kv-row,
+.gc-foot {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    margin-top: 10px;
+    font-size: 1.12rem;
+    color: var(--color-text-paragraph);
+}
+
+.gc-foot {
+    justify-content: space-between;
+    padding-top: 10px;
+    border-top: 1px solid var(--gc-line);
+    color: var(--color-text-subdue);
+}
+
+.gc-foot > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.gc-footer-link {
+    margin-top: 12px;
+    font-size: 1.15rem;
+}
+
+.gc-footer-link a {
+    color: var(--color-primary);
+}
+
+/* ---------- chips & dots ---------- */
+
+.gc-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 10px;
+}
+
+.gc-chip {
+    padding: 3px 10px;
+    border: 1px solid var(--gc-line);
+    border-radius: 999px;
+    background: var(--gc-surface);
+    font-size: 1.12rem;
+    color: var(--color-text-subdue);
+}
+
+.gc-chip b {
+    font-weight: 650;
+    color: var(--color-text-highlight);
+}
+
+.gc-chip-bad,
+.gc-chip-bad b {
+    border-color: color-mix(in srgb, var(--color-negative) 40%, transparent);
+    color: var(--color-negative);
+}
+
+.gc-dot {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: var(--color-text-subdue);
+}
+
+.gc-dot-ok {
+    background: var(--color-positive);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-positive) 18%, transparent);
+}
+
+.gc-dot-bad {
+    background: var(--color-negative);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-negative) 18%, transparent);
+}
+
+/* ---------- small table (indexers) ---------- */
+
+.gc-table {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 8px;
+}
+
+.gc-table-row {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-width: 0;
+    padding: 8px 10px;
+    border: 1px solid var(--gc-line);
+    border-radius: var(--gc-radius-sm);
+    background: var(--gc-surface);
+    font-size: 1.2rem;
+}
+
+.gc-table-row-off {
+    opacity: 0.5;
+}
+
+.gc-table-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--color-text-highlight);
+}
+
+.gc-table-num {
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.gc-table-num:last-child {
+    min-width: 4.4em;
+    text-align: right;
+}
+
+/* ---------- state pills ---------- */
+
+.gc-pill,
+.gc-badge {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    padding: 1px 8px;
+    border: 1px solid var(--gc-line);
+    border-radius: 999px;
+    background: var(--gc-surface);
+    font-size: 0.98rem;
+    font-weight: 600;
+    line-height: 1.5;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--color-text-subdue);
+}
+
+.gc-pill-pending,
+.gc-pill-partial {
+    color: var(--color-upcoming);
+    border-color: color-mix(in srgb, var(--color-upcoming) 40%, transparent);
+    background: color-mix(in srgb, var(--color-upcoming) 14%, var(--color-widget-background));
+}
+
+.gc-pill-approved,
+.gc-pill-processing,
+.gc-pill-downloading {
+    color: var(--color-primary);
+    border-color: color-mix(in srgb, var(--color-primary) 40%, transparent);
+    background: color-mix(in srgb, var(--color-primary) 14%, var(--color-widget-background));
+}
+
+.gc-pill-available {
+    color: var(--color-positive);
+    border-color: color-mix(in srgb, var(--color-positive) 40%, transparent);
+    background: color-mix(in srgb, var(--color-positive) 14%, var(--color-widget-background));
+}
+
+.gc-pill-declined,
+.gc-pill-failed {
+    color: var(--color-negative);
+    border-color: color-mix(in srgb, var(--color-negative) 40%, transparent);
+    background: color-mix(in srgb, var(--color-negative) 14%, var(--color-widget-background));
+}
+
+/* ---------- posters ---------- */
+
+.gc-poster-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+    gap: 12px;
+}
+
+.gc-poster-row {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 12px;
+}
+
+/* single scrolling row: compact on every screen size */
+.gc-rail {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 88px;
+    gap: 12px;
+    margin: 0 -4px;
+    padding: 0 4px 6px;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    overscroll-behavior-x: contain;
+    mask-image: linear-gradient(to right, black calc(100% - 28px), transparent);
+}
+
+.gc-rail > * {
+    scroll-snap-align: start;
+}
+
+.gc-poster-card {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    color: inherit;
+    text-decoration: none;
+}
+
+.gc-poster-wrap {
+    position: relative;
+}
+
+.gc-poster {
+    display: block;
+    width: 100%;
+    aspect-ratio: 2 / 3;
+    margin-bottom: 5px;
+    object-fit: cover;
+    border: 1px solid var(--gc-line);
+    border-radius: var(--gc-radius-sm);
+    background: var(--gc-surface);
+    transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+.gc-poster-card:hover .gc-poster {
+    transform: translateY(-2px);
+    border-color: var(--gc-hover-line);
+    box-shadow: 0 10px 20px -12px rgb(0 0 0 / 0.8);
+}
+
+.gc-badge {
+    position: absolute;
+    left: 5px;
+    bottom: 10px;
+    padding: 0 6px;
+    font-size: 0.85rem;
+    backdrop-filter: blur(6px);
+}
+
+.gc-poster-title {
+    overflow: hidden;
+    font-size: 1.15rem;
+    font-weight: 500;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--color-text-highlight);
+}
+
+.gc-poster-sub {
+    overflow: hidden;
+    font-size: 1.02rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--color-text-subdue);
+}
+
+/* ---------- compact list rows ---------- */
+
+.gc-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.gc-list-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    padding: 7px 10px;
+    border: 1px solid var(--gc-line);
+    border-radius: var(--gc-radius-sm);
+    background: var(--gc-surface);
+}
+
+.gc-list-main {
+    flex: 1;
+    min-width: 0;
+}
+
+.gc-list-title {
+    overflow: hidden;
+    font-size: 1.22rem;
+    font-weight: 500;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--color-text-highlight);
+}
+
+.gc-list-sub {
+    overflow: hidden;
+    font-size: 1.05rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--color-text-subdue);
+}
+
+.gc-list-value {
+    flex-shrink: 0;
+    font-size: 1.08rem;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    color: var(--color-text-subdue);
+}
+
+.gc-mini-poster {
+    width: 24px;
+    height: 36px;
+    flex-shrink: 0;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+/* ---------- request rows (Requests page) ---------- */
+
+.gc-request-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.gc-request {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 10px;
+    border: 1px solid var(--gc-line);
+    border-radius: var(--gc-radius-sm);
+    background: var(--gc-surface);
+    color: inherit;
+    text-decoration: none;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.gc-request:hover {
+    border-color: var(--gc-hover-line);
+    background: var(--gc-hover);
+}
+
+.gc-request-poster {
+    width: 34px;
+    height: 51px;
+    flex-shrink: 0;
+    object-fit: cover;
+    border-radius: 5px;
+}
+
+.gc-request-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.gc-request-title {
+    overflow: hidden;
+    font-size: 1.25rem;
+    font-weight: 500;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--color-text-highlight);
+}
+
+.gc-request-meta {
+    overflow: hidden;
+    font-size: 1.05rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--color-text-subdue);
+}
+
+.gc-request-side {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 5px;
+    flex-shrink: 0;
+}
+
+/* ---------- progress + pipeline ---------- */
+
+.gc-progress {
+    height: 4px;
+    margin: 5px 0 3px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--color-progress-border);
+}
+
+.gc-progress > div {
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--color-primary), color-mix(in srgb, var(--color-primary) 60%, white));
+}
+
+.gc-pipeline {
+    display: flex;
+    height: 8px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--gc-surface);
+}
+
+.gc-pipeline > span {
+    display: block;
+    height: 100%;
+}
+
+.gc-pipeline-pending { background: var(--color-upcoming); }
+.gc-pipeline-approved { background: var(--color-primary); }
+.gc-pipeline-processing { background: color-mix(in srgb, var(--color-primary) 65%, var(--color-upcoming)); }
+.gc-pipeline-available { background: var(--color-positive); }
+.gc-pipeline-declined { background: var(--color-negative); }
+
+/* ---------- alerts ---------- */
+
+.gc-alert-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.gc-alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    margin-bottom: 8px;
+    padding: 8px 10px;
+    border: 1px solid color-mix(in srgb, var(--color-upcoming) 30%, var(--gc-line));
+    border-radius: var(--gc-radius-sm);
+    background: color-mix(in srgb, var(--color-upcoming) 8%, var(--gc-surface));
+}
+
+.gc-alert-list .gc-alert {
+    margin-bottom: 0;
+}
+
+.gc-alert-dot {
+    width: 7px;
+    height: 7px;
+    flex-shrink: 0;
+    margin-top: 0.55em;
+    border-radius: 50%;
+    background: var(--color-upcoming);
+}
+
+.gc-alert-title {
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-upcoming);
+}
+
+.gc-alert-text {
+    font-size: 1.15rem;
+    color: var(--color-text-paragraph);
+}
+
+.gc-status-dot {
+    width: 8px;
+    height: 8px;
+    flex-shrink: 0;
+    border-radius: 50%;
+}
+
+.gc-status-dot-ok { background: var(--color-positive); }
+.gc-status-dot-bad { background: var(--color-negative); }
+
+/* ---------- now playing ---------- */
+
+.gc-now-playing {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.gc-now-poster {
+    width: 48px;
+    height: 72px;
+    flex-shrink: 0;
+    object-fit: cover;
+    border-radius: 6px;
+}
+
+.gc-now-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.gc-now-title {
+    overflow: hidden;
+    font-size: 1.3rem;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--color-text-highlight);
+}
+
+.gc-now-sub,
+.gc-now-meta {
+    overflow: hidden;
+    font-size: 1.08rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--color-text-subdue);
+}
+
+.gc-now-banner {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+}
+
+.gc-now-banner-poster {
+    width: 64px;
+    height: 96px;
+    flex-shrink: 0;
+    object-fit: cover;
+    border: 1px solid var(--gc-line);
+    border-radius: 7px;
+}
+
+.gc-now-banner-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.gc-now-banner-kicker {
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-primary);
+}
+
+.gc-now-banner-title {
+    margin-top: 2px;
+    font-size: 1.8rem;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+    color: var(--color-text-highlight);
+}
+
+.gc-now-banner-sub,
+.gc-now-banner-meta {
+    font-size: 1.12rem;
+    color: var(--color-text-subdue);
+}
+
+/* ---------- docker containers ---------- */
+
+.widget-type-docker-containers .widget-content > ul.dynamic-columns {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    border: none;
+}
+
+.widget-type-docker-containers ul.dynamic-columns.list-with-separator > li {
+    gap: 10px;
+    margin: 0;
+    padding: 8px 10px;
+    border: 1px solid var(--gc-line);
+    border-radius: var(--gc-radius-sm);
+    background: var(--gc-surface);
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.widget-type-docker-containers ul.dynamic-columns.list-with-separator > li::before {
+    display: none;
+}
+
+.widget-type-docker-containers ul.dynamic-columns.list-with-separator > li:hover {
+    border-color: var(--gc-hover-line);
+    background: var(--gc-hover);
+}
+
+.widget-type-docker-containers .docker-container-icon {
+    width: 2.6rem;
+    height: 2.6rem;
+}
+
+/* a quiet green dot reads better than a column of check icons */
+.widget-type-docker-containers .docker-container-status-icon {
+    width: 1.3rem;
+    height: 1.3rem;
+}
+
+.widget-type-docker-containers .docker-container-status-icon[fill="var(--color-positive)"] {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--color-positive);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-positive) 18%, transparent);
+}
+
+/* anything not running and healthy (stopped, unhealthy, starting) gets a red dot */
+.widget-type-docker-containers .docker-container-status-icon:not([fill="var(--color-positive)"]) {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--color-negative);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-negative) 18%, transparent);
+}
+
+.widget-type-docker-containers .docker-container-status-icon path {
+    display: none;
+}
+
+.widget-type-docker-containers .docker-container .size-title-dynamic {
+    font-size: 1.28rem;
+    font-weight: 500;
+    line-height: 1.3;
+}
+
+.widget-type-docker-containers .docker-container > .grow > div:not(.size-title-dynamic) {
+    overflow: hidden;
+    font-size: 1.05rem;
+    line-height: 1.3;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--color-text-subdue);
+}
+
+/* ---------- stock widgets ---------- */
+
+.widget-type-weather .size-h2 {
+    font-size: 1.8rem;
+    font-weight: 600;
+}
+
+.widget-type-weather .weather-columns {
+    margin-top: 10px;
+}
+
+.progress-bar {
+    border-radius: 999px;
+}
+
+.server-compact .progress-bar-combined {
+    height: 0.9rem;
+}
+
+.server-compact .server-stats {
+    min-width: 0;
+}
+
+.text-very-compact {
+    font-variant-numeric: tabular-nums;
+}
+
+.popover-container,
+.popover-container > * {
+    border-radius: var(--gc-radius-sm);
+}
+
+/* ---------- responsive ---------- */
+
+/*
+   Dynacat's stock tablet/phone layout hides every column but one and
+   swaps them with dots at the bottom. Instead: keep the top nav and
+   show every column, side by side while it fits, stacked after that.
+*/
+@media (max-width: 1190px) {
+    .header-container {
+        display: block;
+        margin-top: 10px;
+    }
+
+    .body-content {
+        --gc-search-top: 17px;
+    }
+
+    .mobile-navigation,
+    .mobile-navigation-offset {
+        display: none !important;
+    }
+
+    .page-columns > .page-column {
+        display: block !important;
+        animation: none;
+    }
+
+    .page-column-small {
+        width: 290px;
+        flex-shrink: 0;
+    }
+
+    .body-content {
+        padding-bottom: env(safe-area-inset-bottom, 0);
+    }
+}
+
+@media (max-width: 900px) {
+    .page-columns {
+        flex-direction: column;
+    }
+
+    /* sidebar widgets pair up on tablets instead of one long strip */
+    .page-columns > .page-column-small {
+        display: grid !important;
+        width: 100%;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: var(--widget-gap);
+        align-items: start;
+    }
+
+    .page-column-small > .widget + .widget {
+        margin-top: 0;
+    }
+}
+
+@media (max-width: 640px) {
+    :root {
+        --widget-gap: 12px;
+        --widget-content-vertical-padding: 12px;
+        --widget-content-horizontal-padding: 12px;
+        --content-bounds-padding: 10px;
+    }
+
+    .header-container {
+        margin-top: 8px;
+        --header-height: 44px;
+    }
+
+    /* theme picker is hidden here, so the icon takes the far right */
+    .body-content {
+        --gc-search-top: 12px;
+        --gc-search-right: calc(var(--content-bounds-padding) + 6px);
+    }
+
+    .head-widgets {
+        margin-bottom: 0;
+    }
+
+    .header {
+        padding-inline: 6px;
+    }
+
+    .header .logo {
+        display: none !important;
+    }
+
+    .nav {
+        overflow-x: auto;
+    }
+
+    .nav .nav-item {
+        padding: 6px 12px;
+        font-size: 1.4rem;
+    }
+
+    .nav-item-icon {
+        display: none;
+    }
+
+    .header-actions {
+        display: none;
+    }
+
+    .head-widgets > .widget-type-clock {
+        display: none;
+    }
+
+    .gc-kpis {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .gc-kpi {
+        padding: 10px 12px 9px;
+    }
+
+    .gc-meters {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .gc-meter {
+        padding: 9px 10px;
+    }
+
+    .gc-meter:last-child:nth-child(odd) {
+        grid-column: 1 / -1;
+    }
+
+    .gc-host > .gc-muted {
+        display: none;
+    }
+
+    .gc-kpi:last-child:nth-child(odd) {
+        grid-column: 1 / -1;
+    }
+
+    .gc-kpi-value {
+        font-size: 2.3rem;
+    }
+
+    .gc-kpi-value-sm {
+        font-size: 1.9rem;
+        line-height: 1.33;
+    }
+
+    .widget-type-docker-containers .widget-content > ul.dynamic-columns {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 6px;
+    }
+
+    .widget-type-docker-containers ul.dynamic-columns.list-with-separator > li {
+        gap: 8px;
+        padding: 7px 8px;
+    }
+
+    .widget-type-docker-containers .docker-container > .grow > div:not(.size-title-dynamic) {
+        display: none;
+    }
+
+    .widget-type-docker-containers .docker-container-icon {
+        width: 2.2rem;
+        height: 2.2rem;
+    }
+
+    .gc-rail {
+        grid-auto-columns: 80px;
+        gap: 10px;
+    }
+
+    .gc-poster-row {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .gc-now-banner {
+        align-items: flex-start;
+    }
+
+    .gc-request-side {
+        display: none;
+    }
+
+    .gc-foot {
+        justify-content: flex-start;
+    }
+}

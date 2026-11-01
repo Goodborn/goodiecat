@@ -1687,7 +1687,7 @@ function openStylingModal() {
         logo.append(reg("branding", "hide-logo", checkField("Hide logo", branding["hide-logo"])));
 
         const app = div("editor-fields");
-        app.append(reg("branding", "app-name", textField("App name", branding["app-name"], "Dynacat")));
+        app.append(reg("branding", "app-name", textField("App name", branding["app-name"], "Goodiecat")));
         app.append(reg("branding", "app-icon-url", textField("App icon URL", branding["app-icon-url"], "/assets/app-icon.svg")));
         app.append(reg("branding", "app-background-color", colorField("App background color", branding["app-background-color"], resolveCssColor("--color-background"), "hex")));
 

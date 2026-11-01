@@ -103,7 +103,7 @@ var diagnosticSteps = []diagnosticStep{
 
 func runDiagnostic() {
 	fmt.Println("```")
-	fmt.Println("Dynacat version: " + buildVersion)
+	fmt.Println(projectName + " version: " + buildVersion)
 	fmt.Println("Go version: " + runtime.Version())
 	fmt.Printf("Platform: %s / %s / %d CPUs\n", runtime.GOOS, runtime.GOARCH, runtime.NumCPU())
 	fmt.Println("In Docker container: " + ternary(isRunningInsideDockerContainer(), "yes", "no"))

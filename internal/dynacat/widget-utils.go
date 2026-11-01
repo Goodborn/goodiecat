@@ -107,7 +107,7 @@ type requestDoer interface {
 	Do(*http.Request) (*http.Response, error)
 }
 
-var dynacatUserAgentString = "Dynacat/" + buildVersion + " +https://github.com/Panonim/dynacat"
+var dynacatUserAgentString = projectName + "/" + buildVersion + " +" + projectURL
 var userAgentPersistentVersion atomic.Int32
 
 func getBrowserUserAgentHeader() string {

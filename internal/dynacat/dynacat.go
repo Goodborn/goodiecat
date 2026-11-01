@@ -417,7 +417,7 @@ func newApplication(c *config) (*application, error) {
 	)
 
 	if config.Branding.AppName == "" {
-		config.Branding.AppName = "Dynacat"
+		config.Branding.AppName = projectName
 	}
 
 	if config.Branding.AppIconURL == "" {

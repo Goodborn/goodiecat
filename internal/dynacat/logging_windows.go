@@ -10,7 +10,7 @@ import (
 	"golang.org/x/sys/windows/svc/eventlog"
 )
 
-const eventLogSource = "Dynacat"
+const eventLogSource = "Goodiecat"
 
 // Legacy consoles print raw escape codes unless virtual terminal processing is on.
 func enableConsoleColors() bool {

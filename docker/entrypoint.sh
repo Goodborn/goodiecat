@@ -3,7 +3,7 @@ set -e
 
 # Without PUID, or when already started as a non-root user, run as is.
 if [ "$(id -u)" != "0" ] || [ -z "$PUID" ]; then
-    exec /app/dynacat "$@"
+    exec /app/goodiecat "$@"
 fi
 
 PGID="${PGID:-$PUID}"
@@ -19,13 +19,13 @@ name_by_id() { awk -F: -v id="$2" '$3 == id { print $1; exit }' "$1"; }
 
 group="$(name_by_id /etc/group "$PGID")"
 if [ -z "$group" ]; then
-    group=dynacat
+    group=goodiecat
     addgroup -g "$PGID" "$group"
 fi
 
 user="$(name_by_id /etc/passwd "$PUID")"
 if [ -z "$user" ]; then
-    user=dynacat
+    user=goodiecat
     adduser -D -H -h /app -s /sbin/nologin -u "$PUID" -G "$group" "$user"
 fi
 
@@ -50,6 +50,6 @@ for dir in /app/config /app/assets /app/.cache; do
 done
 
 if [ "$(id -g "$user")" = "$PGID" ]; then
-    exec su-exec "$user" /app/dynacat "$@"
+    exec su-exec "$user" /app/goodiecat "$@"
 fi
-exec su-exec "$PUID:$PGID" /app/dynacat "$@"
+exec su-exec "$PUID:$PGID" /app/goodiecat "$@"

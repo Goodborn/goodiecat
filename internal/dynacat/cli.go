@@ -61,7 +61,7 @@ func parseCliOptions() (*cliOptions, error) {
 		fmt.Println("  update                Update to the latest release (Windows installer only)")
 	}
 
-	configPath := flags.String("config", "dynacat.yml", "Set config path")
+	configPath := flags.String("config", "goodiecat.yml", "Set config path")
 	envFile := flags.String("env-file", "", "Path to an env file to load environment variables from")
 	background := flags.Bool("background", false, "Run without a console window, logging to the Windows Event Log (Windows only)")
 	err := flags.Parse(os.Args[1:])

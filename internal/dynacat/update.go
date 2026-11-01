@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-const latestReleaseURL = "https://api.github.com/repos/Panonim/dynacat/releases/latest"
+const latestReleaseURL = "https://api.github.com/repos/" + projectRepo + "/releases/latest"
 
 type latestReleaseJson struct {
 	TagName string `json:"tag_name"`
@@ -52,11 +52,11 @@ func runUpdate() (bool, error) {
 
 	latest, ok := parseReleaseVersion(release.TagName)
 	if !ok || slices.Compare(latest[:], current[:]) <= 0 {
-		fmt.Printf("Dynacat is up to date (%s)\n", buildVersion)
+		fmt.Printf("%s is up to date (%s)\n", projectName, buildVersion)
 		return false, nil
 	}
 
-	fmt.Printf("Updating Dynacat %s to %s\n", buildVersion, release.TagName)
+	fmt.Printf("Updating %s %s to %s\n", projectName, buildVersion, release.TagName)
 	return installUpdate(&release)
 }
 

@@ -2,17 +2,18 @@
 <footer class="footer flex items-center flex-column">
 {{ if eq "" .App.Config.Branding.CustomFooter }}
     <div>
-        <a class="size-h3" href="https://github.com/Panonim/dynacat" target="_blank" rel="noreferrer">Dynacat</a> 
+        <a class="size-h3" href="https://github.com/Goodborn/goodiecat" target="_blank" rel="noreferrer">Goodiecat</a> 
         {{ if ne "dev" .App.Version }}
             {{ if containsStr .App.Version "beta" }}
-                <a class="visited-indicator" title="Beta packages" href="https://github.com/Panonim/dynacat/pkgs/container/dynacat/" target="_blank" rel="noreferrer">{{ .App.Version }}</a>
+                <a class="visited-indicator" title="Beta packages" href="https://github.com/Goodborn/goodiecat/pkgs/container/goodiecat/" target="_blank" rel="noreferrer">{{ .App.Version }}</a>
             {{ else }}
-                <a class="visited-indicator" title="Release notes" href="https://github.com/Panonim/dynacat/releases/tag/{{ .App.Version }}" target="_blank" rel="noreferrer">{{ .App.Version }}</a>
+                <a class="visited-indicator" title="Release notes" href="https://github.com/Goodborn/goodiecat/releases/tag/{{ .App.Version }}" target="_blank" rel="noreferrer">{{ .App.Version }}</a>
             {{ end }}
         {{ else }}
             ({{ .App.Version }})
         {{ end }}
     </div>
+    <div class="size-h6 color-subdue">based on <a class="visited-indicator" href="https://github.com/Panonim/dynacat" target="_blank" rel="noreferrer">Dynacat</a> and <a class="visited-indicator" href="https://github.com/glanceapp/glance" target="_blank" rel="noreferrer">Glance</a></div>
 {{ else }}
     {{ .App.Config.Branding.CustomFooter }}
 {{ end }}
