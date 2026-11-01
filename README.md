@@ -11,7 +11,7 @@
 
 <table align="center"><tr>
 <td align="center">🖥️<br><b>Server health</b><br><sub>CPU, memory, disks, temperature</sub></td>
-<td align="center">🟢<br><b>Your apps</b><br><sub>green = running, red = down</sub></td>
+<td align="center">🟢<br><b>Your apps</b><br><sub>status, CPU and RAM</sub></td>
 <td align="center">📱<br><b>Phone app</b><br><sub>open, start, stop, restart</sub></td>
 <td align="center">🔔<br><b>Alerts</b><br><sub>when something goes down</sub></td>
 </tr></table>

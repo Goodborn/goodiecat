@@ -572,6 +572,97 @@ a.gc-kpi:hover {
 .gc-meter-head:has(.gc-heat-hot) + .gc-heat,
 .gc-temp:has(.gc-heat-hot) .gc-heat { color: var(--color-negative); }
 
+/* ---------- services detail (per-container CPU / RAM) ---------- */
+
+.gc-svc {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.gc-svc-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr);
+    gap: 16px;
+    align-items: center;
+    padding: 9px 12px;
+    border: 1px solid var(--gc-line);
+    border-radius: var(--gc-radius-sm);
+    background: var(--gc-surface);
+}
+
+.gc-svc-off {
+    opacity: 0.55;
+}
+
+.gc-svc-name {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.gc-svc-name > div {
+    min-width: 0;
+}
+
+.gc-svc-title {
+    overflow: hidden;
+    font-size: 1.28rem;
+    font-weight: 500;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--color-text-highlight);
+}
+
+.gc-svc-sub {
+    overflow: hidden;
+    font-size: 1.05rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--color-text-subdue);
+}
+
+.gc-svc-label {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 1.05rem;
+    color: var(--color-text-subdue);
+}
+
+.gc-svc-label b {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-text-highlight);
+}
+
+.gc-svc-bar {
+    height: 4px;
+    margin-top: 5px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--color-progress-border);
+}
+
+.gc-svc-bar > div {
+    height: 100%;
+    min-width: 2px;
+    max-width: 100%;
+    border-radius: inherit;
+    background: var(--color-primary);
+}
+
+.gc-svc-mem .gc-svc-bar > div {
+    background: var(--color-positive);
+}
+
+.gc-svc-stopped {
+    grid-column: span 2;
+    font-size: 1.1rem;
+    color: var(--color-negative);
+}
+
 /* ---------- legacy stat tiles (Media / Requests pages) ---------- */
 
 .gc-stat-row {
@@ -1435,6 +1526,16 @@ a.gc-kpi:hover {
     }
 
     .gc-meter:last-child:nth-child(odd) {
+        grid-column: 1 / -1;
+    }
+
+    /* services detail: name on its own line, CPU and RAM side by side */
+    .gc-svc-row {
+        grid-template-columns: 1fr 1fr;
+        gap: 8px 14px;
+    }
+
+    .gc-svc-name {
         grid-column: 1 / -1;
     }
 

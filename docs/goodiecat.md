@@ -51,6 +51,7 @@ Out of the box you get:
 | **Server** | CPU, memory, your main drive and the CPU temperature. Bars turn amber, then red, as they fill up. |
 | **Services** | Every Docker container on the computer. A **green dot** means it's running; a **red dot** means it's stopped or unhealthy. |
 | **Weather and calendar** | On the right, or below on a phone. |
+| **Services tab** | Every container's CPU and memory use, busiest first. Home stays clean; the detail is one tap away. |
 
 Your settings live in **`~/goodiecat/config/goodiecat.yml`**. Save the file and the dashboard updates by itself; no restart needed.
 
@@ -156,6 +157,7 @@ goodiecat:
 | --- | --- |
 | `GET /api/goodiecat/host` | CPU, memory, drives, temperature, uptime |
 | `GET /api/goodiecat/containers` | Each container's name, state and health |
+| `GET /api/goodiecat/containers/stats` | CPU (share of the whole machine) and memory per container, refreshed in the background |
 | `POST /api/goodiecat/containers/{start,stop,restart}` | Controls a container. Body `{"name": "…"}`; needs the `X-Goodiecat-Token` header |
 
 The read endpoints use the dashboard's own login if you've set one up, otherwise they're open like the dashboard itself. Control always needs the token.
@@ -170,6 +172,7 @@ For `custom-api` templates, Goodiecat includes ready-made pieces:
 | `gc-kpis` + `gc-kpi` | big-number tiles |
 | `gc-rail` + `gc-poster-card` | a scrolling row of posters |
 | `gc-list` + `gc-list-row` | compact rows |
+| `gc-svc` + `gc-svc-row` | the Services tab's rows with CPU and RAM bars |
 | `gc-chip`, `gc-pill`, `gc-dot-ok` / `gc-dot-bad` | small labels and status dots |
 
 They're defined in [goodiecat.css](../internal/dynacat/static/css/goodiecat.css). The [example config](../examples/goodiecat.yml) shows the server card built from them.

@@ -110,3 +110,46 @@ pages:
           #   hour-format: 24h
           - type: calendar
             first-day-of-week: monday
+
+  # Detail for every container: live CPU and memory, busiest first. Bars
+  # compare containers with each other; the numbers are real.
+  - name: Services
+    width: wide
+    columns:
+      - size: full
+        widgets:
+          - type: custom-api
+            title: Services
+            title-icon: mdi:docker
+            cache: 10s
+            update-interval: 15s
+            url: http://localhost:8080/api/goodiecat/containers/stats
+            headers:
+              X-Goodiecat-Token: ${GOODIECAT_APP_TOKEN}
+            template: |
+              <div class="gc-svc">
+                {{ range .JSON.Array "data" }}
+                {{ $run := eq (.String "state") "running" }}
+                <div class="gc-svc-row{{ if not $run }} gc-svc-off{{ end }}">
+                  <div class="gc-svc-name">
+                    <span class="gc-dot {{ if and $run (ne (.String "health") "unhealthy") }}gc-dot-ok{{ else }}gc-dot-bad{{ end }}"></span>
+                    <div>
+                      <div class="gc-svc-title">{{ .String "display_name" }}</div>
+                      <div class="gc-svc-sub">{{ .String "status" }}</div>
+                    </div>
+                  </div>
+                  {{ if $run }}
+                  <div class="gc-svc-metric">
+                    <div class="gc-svc-label"><span>CPU</span><b>{{ printf "%.1f" (.Float "cpu_percent") }}%</b></div>
+                    <div class="gc-svc-bar"><div style="width: {{ printf "%.1f" (.Float "cpu_bar") }}%"></div></div>
+                  </div>
+                  <div class="gc-svc-metric gc-svc-mem">
+                    <div class="gc-svc-label"><span>RAM</span><b>{{ formatBytes (.Int "memory_bytes") }}</b></div>
+                    <div class="gc-svc-bar"><div style="width: {{ printf "%.1f" (.Float "memory_bar") }}%"></div></div>
+                  </div>
+                  {{ else }}
+                  <div class="gc-svc-stopped">Stopped</div>
+                  {{ end }}
+                </div>
+                {{ end }}
+              </div>

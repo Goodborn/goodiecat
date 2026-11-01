@@ -1,6 +1,7 @@
 package dynacat
 
 import (
+	"cmp"
 	"context"
 	"crypto/subtle"
 	"encoding/json"
@@ -13,6 +14,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Panonim/dynacat/pkg/sysinfo"
@@ -62,6 +64,7 @@ func goodiecatSelfID() string {
 func (a *application) registerGoodiecatRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/goodiecat/host", a.handleGoodiecatHost)
 	mux.HandleFunc("GET /api/goodiecat/containers", a.handleGoodiecatContainers)
+	mux.HandleFunc("GET /api/goodiecat/containers/stats", a.handleGoodiecatContainerStats)
 	mux.HandleFunc("POST /api/goodiecat/containers/{action}", a.handleGoodiecatControl)
 }
 
@@ -260,4 +263,218 @@ func dockerContainerName(c dockerCtrlContainerJSON) string {
 		return ""
 	}
 	return strings.TrimLeft(c.Names[0], "/")
+}
+
+type goodiecatContainerStats struct {
+	Name        string  `json:"name"`
+	DisplayName string  `json:"display_name"`
+	State       string  `json:"state"`
+	Health      string  `json:"health"`
+	Status      string  `json:"status"`
+	CPUPercent  float64 `json:"cpu_percent"`
+	MemoryBytes uint64  `json:"memory_bytes"`
+	MemoryLimit uint64  `json:"memory_limit"`
+	// share of the machine's memory
+	MemoryPercent float64 `json:"memory_percent"`
+	// 0-100 against the busiest container, for bars that stay readable
+	CPUBar    float64 `json:"cpu_bar"`
+	MemoryBar float64 `json:"memory_bar"`
+}
+
+type dockerStatsJSON struct {
+	CPUStats    dockerCPUStats `json:"cpu_stats"`
+	PreCPUStats dockerCPUStats `json:"precpu_stats"`
+	MemoryStats struct {
+		Usage uint64            `json:"usage"`
+		Limit uint64            `json:"limit"`
+		Stats map[string]uint64 `json:"stats"`
+	} `json:"memory_stats"`
+}
+
+type dockerCPUStats struct {
+	CPUUsage struct {
+		TotalUsage uint64 `json:"total_usage"`
+	} `json:"cpu_usage"`
+	SystemUsage uint64 `json:"system_cpu_usage"`
+}
+
+var goodiecatStatsCache struct {
+	sync.Mutex
+	at         time.Time
+	data       []goodiecatContainerStats
+	refreshing bool
+}
+
+// GET /api/goodiecat/containers/stats: CPU and memory for every running
+// container (stopped ones listed without numbers), busiest first.
+//
+// Docker samples each container for about a second, which with many
+// containers is longer than a widget waits. So this always answers right
+// away with the latest numbers and refreshes them in the background; on the
+// very first call the list comes back without numbers.
+func (a *application) handleGoodiecatContainerStats(w http.ResponseWriter, r *http.Request) {
+	if !a.goodiecatCanRead(w, r) {
+		return
+	}
+	cache := &goodiecatStatsCache
+	cache.Lock()
+	if time.Since(cache.at) > 10*time.Second && !cache.refreshing {
+		cache.refreshing = true
+		go func() {
+			data, err := a.collectGoodiecatStats()
+			cache.Lock()
+			defer cache.Unlock()
+			cache.refreshing = false
+			if err == nil {
+				cache.data, cache.at = data, time.Now()
+			}
+		}()
+	}
+	data := cache.data
+	cache.Unlock()
+
+	if data == nil {
+		raw, err := a.listGoodiecatContainers()
+		if err != nil {
+			writeGoodiecatJSON(w, http.StatusBadGateway, map[string]any{"ok": false, "error": "Docker is not reachable"})
+			return
+		}
+		data = goodiecatStatsSkeleton(raw)
+	}
+	writeGoodiecatJSON(w, http.StatusOK, map[string]any{"ok": true, "data": data})
+}
+
+func goodiecatStatsSkeleton(raw []dockerCtrlContainerJSON) []goodiecatContainerStats {
+	out := make([]goodiecatContainerStats, len(raw))
+	for i, c := range raw {
+		name := dockerContainerName(c)
+		health := ""
+		if m := dockerHealthPattern.FindStringSubmatch(c.Status); m != nil {
+			health = strings.TrimPrefix(m[1], "health: ")
+		}
+		out[i] = goodiecatContainerStats{
+			Name:        name,
+			DisplayName: formatDockerCtrlName(name),
+			State:       strings.ToLower(c.State),
+			Health:      health,
+			Status:      c.Status,
+		}
+	}
+	slices.SortStableFunc(out, func(x, y goodiecatContainerStats) int {
+		if (x.State == "running") != (y.State == "running") {
+			if x.State == "running" {
+				return -1
+			}
+			return 1
+		}
+		return cmp.Compare(strings.ToLower(x.DisplayName), strings.ToLower(y.DisplayName))
+	})
+	return out
+}
+
+func (a *application) collectGoodiecatStats() ([]goodiecatContainerStats, error) {
+	raw, err := a.listGoodiecatContainers()
+	if err != nil {
+		return nil, err
+	}
+	client := a.goodiecatDocker()
+	out := goodiecatStatsSkeleton(raw)
+	ids := make(map[string]string, len(raw))
+	for _, c := range raw {
+		ids[dockerContainerName(c)] = c.ID
+	}
+	var wg sync.WaitGroup
+	limit := make(chan struct{}, 16)
+	for i := range out {
+		if out[i].State != "running" {
+			continue
+		}
+		wg.Add(1)
+		go func(i int, id string) {
+			defer wg.Done()
+			limit <- struct{}{}
+			defer func() { <-limit }()
+			s, err := fetchDockerStats(client, id)
+			if err != nil {
+				return
+			}
+			out[i].CPUPercent, out[i].MemoryBytes, out[i].MemoryLimit = s.cpu, s.mem, s.limit
+			if s.limit > 0 {
+				out[i].MemoryPercent = float64(s.mem) / float64(s.limit) * 100
+			}
+		}(i, ids[out[i].Name])
+	}
+	wg.Wait()
+
+	var maxCPU, maxMem float64
+	for _, s := range out {
+		maxCPU = max(maxCPU, s.CPUPercent)
+		maxMem = max(maxMem, float64(s.MemoryBytes))
+	}
+	for i := range out {
+		if maxCPU > 0 {
+			out[i].CPUBar = out[i].CPUPercent / maxCPU * 100
+		}
+		if maxMem > 0 {
+			out[i].MemoryBar = float64(out[i].MemoryBytes) / maxMem * 100
+		}
+	}
+
+	slices.SortStableFunc(out, func(x, y goodiecatContainerStats) int {
+		// running first, then by CPU, then memory
+		if (x.State == "running") != (y.State == "running") {
+			if x.State == "running" {
+				return -1
+			}
+			return 1
+		}
+		if c := cmp.Compare(y.CPUPercent, x.CPUPercent); c != 0 {
+			return c
+		}
+		return cmp.Compare(y.MemoryBytes, x.MemoryBytes)
+	})
+	return out, nil
+}
+
+type dockerStatsSummary struct {
+	cpu        float64
+	mem, limit uint64
+}
+
+func fetchDockerStats(client *dockerCtrlClient, id string) (dockerStatsSummary, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
+	defer cancel()
+	req, err := client.newRequest(ctx, "GET", "/containers/"+id+"/stats?stream=false")
+	if err != nil {
+		return dockerStatsSummary{}, err
+	}
+	resp, err := client.http.Do(req)
+	if err != nil {
+		return dockerStatsSummary{}, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return dockerStatsSummary{}, fmt.Errorf("docker API returned status %d", resp.StatusCode)
+	}
+	var s dockerStatsJSON
+	if err := json.NewDecoder(resp.Body).Decode(&s); err != nil {
+		return dockerStatsSummary{}, err
+	}
+
+	// share of the whole machine (0-100), unlike `docker stats`, which
+	// counts per core and goes past 100
+	var cpu float64
+	cpuDelta := float64(s.CPUStats.CPUUsage.TotalUsage) - float64(s.PreCPUStats.CPUUsage.TotalUsage)
+	sysDelta := float64(s.CPUStats.SystemUsage) - float64(s.PreCPUStats.SystemUsage)
+	if cpuDelta > 0 && sysDelta > 0 {
+		cpu = cpuDelta / sysDelta * 100
+	}
+	mem := s.MemoryStats.Usage
+	// page cache isn't really "used" (cgroup v2 calls it inactive_file)
+	if cache := s.MemoryStats.Stats["inactive_file"]; cache < mem {
+		mem -= cache
+	} else if cache := s.MemoryStats.Stats["total_inactive_file"]; cache < mem {
+		mem -= cache
+	}
+	return dockerStatsSummary{cpu: cpu, mem: mem, limit: s.MemoryStats.Limit}, nil
 }
